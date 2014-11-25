@@ -46,8 +46,56 @@
 
 void main(void)
 {
+	ADCON1 = 0x1f;
+	
+	TRISB = 0x00;
+	TRISC = 0x00;
+	
 	led_show_second( 5 );
 	led_show_minute( 5 );
 	led_show_hour( 5 );
+	
+	
+	uns8 row;
+	uns8 wait;
+	
+	row = 0;
+
+	while( 1 )
+	{
+		switch( ++row )
+		{
+		
+		case 1:
+			PORTB = 0b00000001;
+			PORTC = 0b11111110;
+			break;
+			
+		case 2:
+			PORTB = 0b00000010;
+			PORTC = 0b11111101;
+			break;
+			
+		case 3:
+			PORTB = 0b00000100;
+			PORTC = 0b11111011;
+			break;
+			
+		case 4:
+			PORTB = 0b00001000;
+			PORTC = 0b10111111;
+			break;
+			
+		case 5:
+			PORTB = 0b11111111;
+			PORTC = 0b01111111;
+			row = 0;
+			break;
+		}
+		
+		for( wait=255; wait; --wait );
+		
+		
+	}		
 	
 }

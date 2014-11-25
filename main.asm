@@ -1,7 +1,7 @@
 
 ; CC8E Version 1.3F, Copyright (c) B Knudsen Data
 ; C compiler for the PIC18 microcontrollers
-; ************  23. Nov 2014  19:22  *************
+; ************  25. Nov 2014  16:32  *************
 
 	processor  PIC18F26J53
 	radix  DEC
@@ -11,7 +11,11 @@ TABLAT      EQU   0xFF5
 INDF0       EQU   0xFEF
 FSR0        EQU   0xFE9
 WREG        EQU   0xFE8
+Zero_       EQU   2
+ADCON1      EQU   0xFC1
 EECON2      EQU   0xFA7
+TRISC       EQU   0xF94
+TRISB       EQU   0xF93
 PORTC       EQU   0xF82
 PORTB       EQU   0xF81
 RTCVALH     EQU   0xF3B
@@ -25,12 +29,14 @@ RTCEN       EQU   7
 hour        EQU   0xF7F
 minute      EQU   0xF7F
 second      EQU   0xF7F
-led_row     EQU   0x02
-second_2    EQU   0x00
-minute_2    EQU   0x00
-hour_2      EQU   0x00
+led_row     EQU   0x04
+second_2    EQU   0x02
+minute_2    EQU   0x02
+hour_2      EQU   0x02
 row         EQU   0xF7F
-ci          EQU   0x01
+row_2       EQU   0x00
+wait        EQU   0x01
+ci          EQU   0x03
 
 	GOTO main
 
@@ -408,7 +414,7 @@ led_show_row
 	CLRF  PORTB,0
 			;	LED_COL_PORT = led_row[ row ];
 	CLRF  FSR0+1,0
-	MOVLW 2
+	MOVLW 4
 	ADDWF row,W,0
 	MOVWF FSR0,0
 	MOVFF INDF0,PORTC
@@ -470,6 +476,15 @@ led_show_row
 			;void main(void)
 			;{
 main
+			;	ADCON1 = 0x1f;
+	MOVLW 31
+	MOVWF ADCON1,0
+			;	
+			;	TRISB = 0x00;
+	CLRF  TRISB,0
+			;	TRISC = 0x00;
+	CLRF  TRISC,0
+			;	
 			;	led_show_second( 5 );
 	MOVLW 5
 	RCALL led_show_second
@@ -479,12 +494,102 @@ main
 			;	led_show_hour( 5 );
 	MOVLW 5
 	RCALL led_show_hour
-	SLEEP
-	RESET
+			;	
+			;	
+			;	uns8 row;
+			;	uns8 wait;
+			;	
+			;	row = 0;
+	CLRF  row_2,0
+			;
+			;	while( 1 )
+			;	{
+			;		switch( ++row )
+m010	INCF  row_2,1,0
+	MOVF  row_2,W,0
+	XORLW 1
+	BTFSC 0xFD8,Zero_,0
+	BRA   m011
+	XORLW 3
+	BTFSC 0xFD8,Zero_,0
+	BRA   m012
+	XORLW 1
+	BTFSC 0xFD8,Zero_,0
+	BRA   m013
+	XORLW 7
+	BTFSC 0xFD8,Zero_,0
+	BRA   m014
+	XORLW 1
+	BTFSC 0xFD8,Zero_,0
+	BRA   m015
+	BRA   m016
+			;		{
+			;		
+			;		case 1:
+			;			PORTB = 0b00000001;
+m011	MOVLW 1
+	MOVWF PORTB,0
+			;			PORTC = 0b11111110;
+	MOVLW 254
+	MOVWF PORTC,0
+			;			break;
+	BRA   m016
+			;			
+			;		case 2:
+			;			PORTB = 0b00000010;
+m012	MOVLW 2
+	MOVWF PORTB,0
+			;			PORTC = 0b11111101;
+	MOVLW 253
+	MOVWF PORTC,0
+			;			break;
+	BRA   m016
+			;			
+			;		case 3:
+			;			PORTB = 0b00000100;
+m013	MOVLW 4
+	MOVWF PORTB,0
+			;			PORTC = 0b11111011;
+	MOVLW 251
+	MOVWF PORTC,0
+			;			break;
+	BRA   m016
+			;			
+			;		case 4:
+			;			PORTB = 0b00001000;
+m014	MOVLW 8
+	MOVWF PORTB,0
+			;			PORTC = 0b10111111;
+	MOVLW 191
+	MOVWF PORTC,0
+			;			break;
+	BRA   m016
+			;			
+			;		case 5:
+			;			PORTB = 0b11111111;
+m015	SETF  PORTB,0
+			;			PORTC = 0b01111111;
+	MOVLW 127
+	MOVWF PORTC,0
+			;			row = 0;
+	CLRF  row_2,0
+			;			break;
+			;		}
+			;		
+			;		for( wait=255; wait; --wait );
+m016	SETF  wait,0
+m017	MOVF  wait,1,0
+	BTFSC 0xFD8,Zero_,0
+	BRA   m010
+	DECF  wait,1,0
+	BRA   m017
+			;		
+			;		
+			;	}		
 _const1
 	MOVWF ci,0
 	MOVF  ci,W,0
-	ADDLW 116
+	ADDLW 218
 	MOVWF TBLPTR,0
 	MOVLW 1
 	CLRF  TBLPTR+1,0
@@ -535,10 +640,10 @@ _const1
 ; 0x0000F2   11 word(s)  0 % : led_show_second
 ; 0x000108   11 word(s)  0 % : led_show_minute
 ; 0x00011E   11 word(s)  0 % : led_show_hour
-; 0x00015E   23 word(s)  0 % : _const1
+; 0x0001C4   23 word(s)  0 % : _const1
 ; 0x000134   13 word(s)  0 % : led_show_row
-; 0x00014E    8 word(s)  0 % : main
+; 0x00014E   59 word(s)  0 % : main
 
-; RAM usage: 16 bytes (2 local), 3760 bytes free
+; RAM usage: 18 bytes (4 local), 3758 bytes free
 ; Maximum call level: 2
-; Total of 206 code words (0 %)
+; Total of 257 code words (0 %)
