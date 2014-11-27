@@ -1,7 +1,7 @@
 #pragma chip PIC18F26J53
 
 #pragma cdata[0x7ffc]
-#pragma cdata[] = 0xFE, 0xF7, 0xD8, 0xFF
+#pragma cdata[] = 0xBE, 0xF7, 0xD8, 0xFF
 #pragma cdata[] = 0xFD, 0xFB, 0xBF, 0xFB 
 
 /* Pin mappings
@@ -38,9 +38,11 @@
 
 #include "rtc.h"
 #include "led.h"
+#include "touch.h"
 
 #include "rtc.c"
 #include "led.c"
+#include "touch.c"
 
 	
 
@@ -51,51 +53,102 @@ void main(void)
 	TRISB = 0x00;
 	TRISC = 0x00;
 	
-	led_show_second( 5 );
-	led_show_minute( 5 );
-	led_show_hour( 5 );
-	
+	led_load_second( 5 );
+	led_load_minute( 5 );
+	led_load_hour( 5 );
 	
 	uns8 row;
-	uns8 wait;
+	uns8 delay;
+
+	T0CON = 0b11000001;		// set TMR0 to overflow on 1024 instructions cycles.  1ms @ 4MHz
+//	T0CON = 0b11000111;		// set TMR0 to overflow on 64k instructions cycles.  65ms
+	TMR0IF = 0;
+
+	led_init();
+	led_load_logo();
+
+	for( delay = 0; delay < 250; delay++ )	// 250 x 5 x 1ms = 1.25 seconds
+	{
+		for( row=0; row <=4; row++ )
+		{
+			led_show_row( row );
+
+			while( !TMR0IF )
+				;
+				
+			TMR0IF = 0;
+		}	
+	}		
 	
-	row = 0;
+	uns8 sec;
+	led_clear();
+	
+	sec = 0;
+	
+/*	
+	while( 1 )
+	{
+		sec++;
+		
+		led_load_second( sec );
+		
+		for( delay = 0; delay < 200; delay++ )	// 200 x 5 x 1ms = 1.25 seconds
+		{
+			for( row=0; row <=4; row++ )
+			{
+				led_show_row( row );
+
+				while( !TMR0IF )
+					;
+				
+				TMR0IF = 0;
+			}	
+		}	
+	}		
+*/	
+	
+	rtc_init();
+	
+	rtc_set_hour( 0x11 );
+	rtc_set_minute( 0x35 );
+	
+	touch_init();
+
+	uns8 tmp[4];
+	uns8 t;
 
 	while( 1 )
 	{
-		switch( ++row )
+		led_load_second( rtc_get_second() );
+		led_load_minute( rtc_get_minute() );
+		led_load_hour( rtc_get_hour() );
+		
+
+		for( row=0; row <=4; row++ )
 		{
-		
-		case 1:
-			PORTB = 0b00000001;
-			PORTC = 0b11111110;
-			break;
+			led_show_row( row );
+
+			while( !TMR0IF )
+				;
+				
+			TMR0IF = 0;
 			
-		case 2:
-			PORTB = 0b00000010;
-			PORTC = 0b11111101;
-			break;
+			if( row < 4 )
+			{
+				t = touch_sample( row );
+				tmp[row] = t;
 			
-		case 3:
-			PORTB = 0b00000100;
-			PORTC = 0b11111011;
-			break;
-			
-		case 4:
-			PORTB = 0b00001000;
-			PORTC = 0b10111111;
-			break;
-			
-		case 5:
-			PORTB = 0b11111111;
-			PORTC = 0b01111111;
-			row = 0;
-			break;
-		}
+				if( t > 4 )
+					led_show_icon( row );
+				else
+					led_hide_icon( row );
+			}		
+
+		}	
 		
-		for( wait=255; wait; --wait );
-		
-		
+//		tmp = touch_sample( 2 );
 	}		
+
+
 	
 }

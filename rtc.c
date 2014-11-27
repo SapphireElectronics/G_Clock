@@ -5,8 +5,11 @@
 
 void rtc_init( void )
 {
-	RTCEN = 1;		// enable RTC
-	RTCPTR0 = 0;	// select second/minutes register pair
+	rtc_wr_enable();	// enable rtc writes
+	RTCEN = 1;			// enable RTC
+	rtc_wr_disable();	// disable rtc writes
+
+	RTCPTR0 = 0;		// select second/minutes register pair
 	RTCPTR1 = 0;
 	
 }	
@@ -128,6 +131,24 @@ void rtc_dec_second( void )
 	RTCVALL = W;
 
 	rtc_wr_disable();	// disable rtc writes
+}	
+
+uns8 rtc_get_hour( void )
+{
+	RTCPTR0 = 1;		// select hours in register pointer
+	return( RTCVALL );
+}	
+
+uns8 rtc_get_minute( void )
+{
+	RTCPTR0 = 0;		// select minutes in register pointer
+	return( RTCVALH );
+}	
+
+uns8 rtc_get_second( void )
+{
+	RTCPTR0 = 0;		// select seconds in register pointer
+	return( RTCVALL );
 }	
 
 #endif // _RTC_C
