@@ -101,7 +101,7 @@ void led_show_row( uns8 row )
 void led_show_icon( uns8 icon )
 {
 	switch( icon ) {
-		case 0:	led_row[4].7 = 1;	break; 
+		case 0:	led_row[4].4 = 1;	break; 
 		case 1:	led_row[4].5 = 1;	break; 
 		case 2:	led_row[4].3 = 1;	break; 
 		case 3:	led_row[4].1 = 1;	break; 
@@ -111,7 +111,7 @@ void led_show_icon( uns8 icon )
 void led_hide_icon( uns8 icon )
 {
 	switch( icon ) {
-		case 0:	led_row[4].7 = 0;	break; 
+		case 0:	led_row[4].4 = 0;	break; 
 		case 1:	led_row[4].5 = 0;	break; 
 		case 2:	led_row[4].3 = 0;	break; 
 		case 3:	led_row[4].1 = 0;	break; 

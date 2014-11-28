@@ -1,7 +1,7 @@
 
 ; CC8E Version 1.3F, Copyright (c) B Knudsen Data
 ; C compiler for the PIC18 microcontrollers
-; ************  26. Nov 2014  22:51  *************
+; ************  28. Nov 2014   0:57  *************
 
 	processor  PIC18F26J53
 	radix  DEC
@@ -11,6 +11,7 @@ TABLAT      EQU   0xFF5
 INDF0       EQU   0xFEF
 FSR0        EQU   0xFE9
 WREG        EQU   0xFE8
+Carry       EQU   0
 Zero_       EQU   2
 T0CON       EQU   0xFD5
 ADRESH      EQU   0xFC4
@@ -57,22 +58,26 @@ RTCEN       EQU   7
 hour        EQU   0x08
 minute      EQU   0x08
 second      EQU   0xF7F
-led_mode    EQU   0x0B
-led_row     EQU   0x0C
+led_mode    EQU   0x0E
+led_row     EQU   0x0F
 second_2    EQU   0x08
 minute_2    EQU   0x08
 hour_2      EQU   0x08
 row         EQU   0x08
 icon        EQU   0x08
 icon_2      EQU   0x08
-touch_count EQU   0x11
-button      EQU   0x08
-wait        EQU   0x09
+touch_value EQU   0x14
+touch_state EQU   0x18
+touch_count EQU   0x1C
+button      EQU   0x0B
+wait        EQU   0x0C
+button_2    EQU   0x08
+smp         EQU   0x09
+val         EQU   0x0A
 row_2       EQU   0x00
 delay       EQU   0x01
 sec         EQU   0x02
-t           EQU   0x07
-ci          EQU   0x0A
+ci          EQU   0x0D
 
 	GOTO main
 
@@ -577,7 +582,7 @@ led_show_row
 	SETF  PORTC,0
 			;	LED_ROW_PORT = led_row[ row ];
 	CLRF  FSR0+1,0
-	MOVLW 12
+	MOVLW 15
 	ADDWF row,W,0
 	MOVWF FSR0,0
 	MOVFF INDF0,PORTB
@@ -606,8 +611,8 @@ led_show_icon
 	BTFSC 0xFD8,Zero_,0
 	BRA   m013
 	BRA   m014
-			;		case 0:	led_row[4].7 = 1;	break; 
-m010	BSF   led_row+4,7,0
+			;		case 0:	led_row[4].4 = 1;	break; 
+m010	BSF   led_row+4,4,0
 	BRA   m014
 			;		case 1:	led_row[4].5 = 1;	break; 
 m011	BSF   led_row+4,5,0
@@ -639,8 +644,8 @@ led_hide_icon
 	BTFSC 0xFD8,Zero_,0
 	BRA   m018
 	BRA   m019
-			;		case 0:	led_row[4].7 = 0;	break; 
-m015	BCF   led_row+4,7,0
+			;		case 0:	led_row[4].4 = 0;	break; 
+m015	BCF   led_row+4,4,0
 	BRA   m019
 			;		case 1:	led_row[4].5 = 0;	break; 
 m016	BCF   led_row+4,5,0
@@ -669,7 +674,12 @@ led_init
 			;
 			;#include "touch.h"
 			;
-			;uns8 touch_count;
+			;#define TOUCH_THRESHOLD 5
+			;
+			;//uns8 touch_count;
+			;uns8 touch_value[4];
+			;uns8 touch_state[4];
+			;uns8 touch_count[4];
 			;
 			;void touch_init( void )
 			;{
@@ -722,8 +732,9 @@ touch_init
 			;//	Configure AtoD, left justify
 			;	ADCON0 = 0b00000000;
 	CLRF  ADCON0,0
-			;	ADCON1 = 0b00000000;
-	CLRF  ADCON1,0
+			;	ADCON1 = 0b00001010;
+	MOVLW 10
+	MOVWF ADCON1,0
 			;	
 			;	ADON = 1; //Turn On A/D
 	BSF   0xFC2,ADON,0
@@ -736,12 +747,34 @@ touch_init
 			;	LATA = 0;
 	CLRF  LATA,0
 			;	
-			;	touch_count = 0;
+			;	touch_count[0] = 0;
 	CLRF  touch_count,0
+			;	touch_count[1] = 0;
+	CLRF  touch_count+1,0
+			;	touch_count[2] = 0;
+	CLRF  touch_count+2,0
+			;	touch_count[3] = 0;
+	CLRF  touch_count+3,0
+			;	touch_state[0] = 0;
+	CLRF  touch_state,0
+			;	touch_state[1] = 0;
+	CLRF  touch_state+1,0
+			;	touch_state[2] = 0;
+	CLRF  touch_state+2,0
+			;	touch_state[3] = 0;
+	CLRF  touch_state+3,0
+			;	touch_value[0] = 0;
+	CLRF  touch_value,0
+			;	touch_value[1] = 0;
+	CLRF  touch_value+1,0
+			;	touch_value[2] = 0;
+	CLRF  touch_value+2,0
+			;	touch_value[3] = 0;
+	CLRF  touch_value+3,0
 			;}
 	RETURN
 			;
-			;#define WAIT_COUNT 200
+			;#define WAIT_COUNT 4
 			;
 			;const uns8 touch_button_tris[4] = { 0x01, 0x02, 0x04, 0x08 };
 			;const uns8 touch_button_adcon[4] = 
@@ -833,7 +866,7 @@ touch_sample
 			;
 			;	for( wait = 0; wait < WAIT_COUNT; wait++ )
 	CLRF  wait,0
-m020	MOVLW 200
+m020	MOVLW 4
 	CPFSLT wait,0
 	BRA   m021
 			;		;
@@ -870,6 +903,145 @@ m022	BTFSC 0xFC2,GO,0
 	RETURN
 			;}	
 			;
+			;
+			;uns8 t_s[4];
+			;
+			;uns8 touch_filter( uns8 button )
+			;{
+touch_filter
+	MOVWF button_2,0
+			;	uns8 smp, val;
+			;	val = touch_value[ button ];
+	CLRF  FSR0+1,0
+	MOVLW 20
+	ADDWF button_2,W,0
+	MOVWF FSR0,0
+	MOVFF INDF0,val
+			;	smp = touch_sample( button );
+	MOVF  button_2,W,0
+	RCALL touch_sample
+	MOVWF smp,0
+			;	
+			;	t_s[button] = smp;
+	CLRF  FSR0+1,0
+	MOVLW 32
+	ADDWF button_2,W,0
+	MOVWF FSR0,0
+	MOVFF smp,INDF0
+			;	
+			;	if( val == 0 )
+	MOVF  val,1,0
+	BTFSC 0xFD8,Zero_,0
+			;		val = smp;
+	MOVFF smp,val
+			;	
+			;	if( smp < (val-TOUCH_THRESHOLD) )
+	MOVLW 5
+	SUBWF val,W,0
+	CPFSLT smp,0
+	BRA   m024
+			;	{
+			;		if( touch_count[ button ] < 4 )
+	CLRF  FSR0+1,0
+	MOVLW 28
+	ADDWF button_2,W,0
+	MOVWF FSR0,0
+	MOVLW 4
+	CPFSLT INDF0,0
+	BRA   m023
+			;		{
+			;			touch_count[ button ]++;
+	CLRF  FSR0+1,0
+	MOVLW 28
+	ADDWF button_2,W,0
+	MOVWF FSR0,0
+	INCF  INDF0,1,0
+			;		}
+			;		else
+	BRA   m026
+			;		{
+			;			touch_state[ button ] = 1;
+m023	CLRF  FSR0+1,0
+	MOVLW 24
+	ADDWF button_2,W,0
+	MOVWF FSR0,0
+	MOVLW 1
+	MOVWF INDF0,0
+			;		}
+			;	}
+			;	else
+	BRA   m026
+			;	{
+			;		if( touch_count[ button ] )
+m024	CLRF  FSR0+1,0
+	MOVLW 28
+	ADDWF button_2,W,0
+	MOVWF FSR0,0
+	MOVF  INDF0,W,0
+	BTFSC 0xFD8,Zero_,0
+	BRA   m025
+			;		{
+			;			touch_count[ button ]--;
+	CLRF  FSR0+1,0
+	MOVLW 28
+	ADDWF button_2,W,0
+	MOVWF FSR0,0
+	DECF  INDF0,1,0
+			;		}
+			;		else
+	BRA   m026
+			;		{
+			;			touch_state[ button ] = 0;
+m025	CLRF  FSR0+1,0
+	MOVLW 24
+	ADDWF button_2,W,0
+	MOVWF FSR0,0
+	CLRF  INDF0,0
+			;		}
+			;	}
+			;	
+			;//	if( touch_state[ button ] == 0 ) 
+			;	{ 
+			;//		smp >>= 1;
+			;//		val >>= 1;
+			;//		val = ( val+val+val+smp ) >> 1;
+			;//		val += Carry;
+			;
+			;		val -= ((val>>3) + Carry);
+m026	SWAPF val,W,0
+	RLNCF WREG,1,0
+	ANDLW 31
+	BTFSC 0xFD8,Carry,0
+	ADDLW 1
+	SUBWF val,1,0
+			;		val += (smp>>3) + Carry;
+	SWAPF smp,W,0
+	RLNCF WREG,1,0
+	ANDLW 31
+	BTFSC 0xFD8,Carry,0
+	ADDLW 1
+	ADDWF val,1,0
+			;		
+			;		touch_value[ button ] = val;
+	CLRF  FSR0+1,0
+	MOVLW 20
+	ADDWF button_2,W,0
+	MOVWF FSR0,0
+	MOVFF val,INDF0
+			;	}
+			;	
+			;	
+			;	
+			;	
+			;	return touch_state[ button ];
+	CLRF  FSR0+1,0
+	MOVLW 24
+	ADDWF button_2,W,0
+	MOVWF FSR0,0
+	MOVF  INDF0,W,0
+	RETURN
+			;}	
+			;	
 			;
 			;uns8 touch_task( void )
 			;{
@@ -965,37 +1137,37 @@ main
 			;
 			;	for( delay = 0; delay < 250; delay++ )	// 250 x 5 x 1ms = 1.25 seconds
 	CLRF  delay,0
-m023	MOVLW 250
+m027	MOVLW 250
 	CPFSLT delay,0
-	BRA   m027
+	BRA   m031
 			;	{
 			;		for( row=0; row <=4; row++ )
 	CLRF  row_2,0
-m024	MOVLW 5
+m028	MOVLW 5
 	CPFSLT row_2,0
-	BRA   m026
+	BRA   m030
 			;		{
 			;			led_show_row( row );
 	MOVF  row_2,W,0
 	RCALL led_show_row
 			;
 			;			while( !TMR0IF )
-m025	BTFSS 0xFF2,TMR0IF,0
+m029	BTFSS 0xFF2,TMR0IF,0
 			;				;
-	BRA   m025
+	BRA   m029
 			;				
 			;			TMR0IF = 0;
 	BCF   0xFF2,TMR0IF,0
 			;		}	
 	INCF  row_2,1,0
-	BRA   m024
+	BRA   m028
 			;	}		
-m026	INCF  delay,1,0
-	BRA   m023
+m030	INCF  delay,1,0
+	BRA   m027
 			;	
 			;	uns8 sec;
 			;	led_clear();
-m027	RCALL led_clear
+m031	RCALL led_clear
 			;	
 			;	sec = 0;
 	CLRF  sec,0
@@ -1041,7 +1213,7 @@ m027	RCALL led_clear
 			;	while( 1 )
 			;	{
 			;		led_load_second( rtc_get_second() );
-m028	RCALL rtc_get_second
+m032	RCALL rtc_get_second
 	RCALL led_load_second
 			;		led_load_minute( rtc_get_minute() );
 	RCALL rtc_get_minute
@@ -1053,18 +1225,18 @@ m028	RCALL rtc_get_second
 			;
 			;		for( row=0; row <=4; row++ )
 	CLRF  row_2,0
-m029	MOVLW 5
+m033	MOVLW 5
 	CPFSLT row_2,0
-	BRA   m028
+	BRA   m032
 			;		{
 			;			led_show_row( row );
 	MOVF  row_2,W,0
 	RCALL led_show_row
 			;
 			;			while( !TMR0IF )
-m030	BTFSS 0xFF2,TMR0IF,0
+m034	BTFSS 0xFF2,TMR0IF,0
 			;				;
-	BRA   m030
+	BRA   m034
 			;				
 			;			TMR0IF = 0;
 	BCF   0xFF2,TMR0IF,0
@@ -1072,45 +1244,47 @@ m030	BTFSS 0xFF2,TMR0IF,0
 			;			if( row < 4 )
 	MOVLW 4
 	CPFSLT row_2,0
-	BRA   m032
+	BRA   m036
 			;			{
-			;				t = touch_sample( row );
+			;				if( touch_filter( row ) )
 	MOVF  row_2,W,0
-	RCALL touch_sample
-	MOVWF t,0
-			;				tmp[row] = t;
-	CLRF  FSR0+1,0
-	MOVLW 3
-	ADDWF row_2,W,0
-	MOVWF FSR0,0
-	MOVFF t,INDF0
-			;			
-			;				if( t > 4 )
-	MOVLW 4
-	CPFSGT t,0
-	BRA   m031
+	RCALL touch_filter
+	XORLW 0
+	BTFSC 0xFD8,Zero_,0
+	BRA   m035
 			;					led_show_icon( row );
 	MOVF  row_2,W,0
 	RCALL led_show_icon
 			;				else
-	BRA   m032
+	BRA   m036
 			;					led_hide_icon( row );
-m031	MOVF  row_2,W,0
+m035	MOVF  row_2,W,0
 	RCALL led_hide_icon
+			;				
+			;
+			;#if 0
+			;				t = touch_sample( row );
+			;				tmp[row] = t;
+			;			
+			;				if( t < 78 )
+			;					led_show_icon( row );
+			;				else
+			;					led_hide_icon( row );
+			;#endif
 			;			}		
 			;
 			;		}	
-m032	INCF  row_2,1,0
-	BRA   m029
+m036	INCF  row_2,1,0
+	BRA   m033
 			;		
 			;//		tmp = touch_sample( 2 );
 			;	}		
 _const1
 	MOVWF ci,0
 	MOVF  ci,W,0
-	ADDLW 186
+	ADDLW 112
 	MOVWF TBLPTR,0
-	MOVLW 3
+	MOVLW 4
 	CLRF  TBLPTR+1,0
 	ADDWFC TBLPTR+1,1,0
 	CLRF  TBLPTR+2,0
@@ -1167,12 +1341,13 @@ _const1
 ; 0x00023E    2 word(s)  0 % : led_init
 ; 0x0001E6   22 word(s)  0 % : led_show_icon
 ; 0x000212   22 word(s)  0 % : led_hide_icon
-; 0x000242   27 word(s)  0 % : touch_init
-; 0x000278   72 word(s)  0 % : touch_sample
-; 0x0003A4   22 word(s)  0 % : _const1
-; 0x000308    1 word(s)  0 % : touch_task
-; 0x00030A   77 word(s)  0 % : main
+; 0x000242   39 word(s)  0 % : touch_init
+; 0x000290   72 word(s)  0 % : touch_sample
+; 0x00045A   22 word(s)  0 % : _const1
+; 0x000320   86 word(s)  0 % : touch_filter
+; 0x0003CC    1 word(s)  0 % : touch_task
+; 0x0003CE   70 word(s)  0 % : main
 
-; RAM usage: 24 bytes (11 local), 3752 bytes free
-; Maximum call level: 2
-; Total of 496 code words (1 %)
+; RAM usage: 42 bytes (14 local), 3734 bytes free
+; Maximum call level: 3
+; Total of 587 code words (1 %)

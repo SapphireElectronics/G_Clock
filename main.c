@@ -135,13 +135,21 @@ void main(void)
 			
 			if( row < 4 )
 			{
-				t = touch_sample( row );
-				tmp[row] = t;
-			
-				if( t > 4 )
+				if( touch_filter( row ) )
 					led_show_icon( row );
 				else
 					led_hide_icon( row );
+				
+
+#if 0
+				t = touch_sample( row );
+				tmp[row] = t;
+			
+				if( t < 78 )
+					led_show_icon( row );
+				else
+					led_hide_icon( row );
+#endif
 			}		
 
 		}	

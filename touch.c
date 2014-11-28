@@ -3,7 +3,12 @@
 
 #include "touch.h"
 
-uns8 touch_count;
+#define TOUCH_THRESHOLD 5
+
+//uns8 touch_count;
+uns8 touch_value[4];
+uns8 touch_state[4];
+uns8 touch_count[4];
 
 void touch_init( void )
 {
@@ -35,7 +40,7 @@ void touch_init( void )
 	
 //	Configure AtoD, left justify
 	ADCON0 = 0b00000000;
-	ADCON1 = 0b00000000;
+	ADCON1 = 0b00001010;
 	
 	ADON = 1; //Turn On A/D
 	CTMUEN = 1; //Enable CTMU
@@ -44,10 +49,21 @@ void touch_init( void )
 	TRISA = 0;
 	LATA = 0;
 	
-	touch_count = 0;
+	touch_count[0] = 0;
+	touch_count[1] = 0;
+	touch_count[2] = 0;
+	touch_count[3] = 0;
+	touch_state[0] = 0;
+	touch_state[1] = 0;
+	touch_state[2] = 0;
+	touch_state[3] = 0;
+	touch_value[0] = 0;
+	touch_value[1] = 0;
+	touch_value[2] = 0;
+	touch_value[3] = 0;
 }
 
-#define WAIT_COUNT 100
+#define WAIT_COUNT 4
 
 const uns8 touch_button_tris[4] = { 0x01, 0x02, 0x04, 0x08 };
 const uns8 touch_button_adcon[4] = 
@@ -103,6 +119,62 @@ uns8 touch_sample( uns8 button )
 	return( ADRESH );
 }	
 
+
+uns8 t_s[4];
+
+uns8 touch_filter( uns8 button )
+{
+	uns8 smp, val;
+	val = touch_value[ button ];
+	smp = touch_sample( button );
+	
+	t_s[button] = smp;
+	
+	if( val == 0 )
+		val = smp;
+	
+	if( smp < (val-TOUCH_THRESHOLD) )
+	{
+		if( touch_count[ button ] < 4 )
+		{
+			touch_count[ button ]++;
+		}
+		else
+		{
+			touch_state[ button ] = 1;
+		}
+	}
+	else
+	{
+		if( touch_count[ button ] )
+		{
+			touch_count[ button ]--;
+		}
+		else
+		{
+			touch_state[ button ] = 0;
+		}
+	}
+	
+//	if( touch_state[ button ] == 0 ) 
+	{ 
+//		smp >>= 1;
+//		val >>= 1;
+//		val = ( val+val+val+smp ) >> 1;
+//		val += Carry;
+
+		val -= ((val>>3) + Carry);
+		val += (smp>>3) + Carry;
+		
+		touch_value[ button ] = val;
+	}
+	
+	
+	
+	
+	return touch_state[ button ];
+}	
+	
 
 uns8 touch_task( void )
 {
