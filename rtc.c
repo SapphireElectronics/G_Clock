@@ -57,12 +57,20 @@ void rtc_set_second( uns8 second )
 
 void rtc_inc_hour( void )
 {
+	uns8 hour;
+
 	while( RTCSYNC );	// wait until safe to write
 	RTCPTR0 = 1;		// select hours in register pointer
 	rtc_wr_enable();	// enable rtc writes
 	
-	W = RTCVALL;
-	W = decadj( ++W );
+	hour = RTCVALL;
+	if( hour == 0x23 )
+		hour = 0;
+	else
+		++hour;
+
+	W = hour;
+	W = decadj( W );
 	RTCVALL = W;
 
 	rtc_wr_disable();	// disable rtc writes
@@ -70,12 +78,21 @@ void rtc_inc_hour( void )
 
 void rtc_dec_hour( void )
 {
+	uns8 hour;
+
 	while( RTCSYNC );	// wait until safe to write
 	RTCPTR0 = 1;		// select hours in register pointer
 	rtc_wr_enable();	// enable rtc writes
 	
-	W = RTCVALL;
-	W = decadj( --W );
+	hour = RTCVALL;
+	if( hour == 0 )
+		hour = 0x23;
+	else
+		hour += 0x99;	// this is the same as subtracting 1 in 
+						// BCD format. Tricky!
+	
+	W = hour;	
+	W = decadj( W );
 	RTCVALL = W;
 
 	rtc_wr_disable();	// disable rtc writes
@@ -83,12 +100,20 @@ void rtc_dec_hour( void )
 
 void rtc_inc_minute( void )
 {
+	uns8 minute;
+	
 	while( RTCSYNC );	// wait until safe to write
 	RTCPTR0 = 0;		// select minutes in register pointer
 	rtc_wr_enable();	// enable rtc writes
 
-	W = RTCVALH;
-	W = decadj( ++W );
+	minute = RTCVALH;
+	if( minute == 0x59 )
+		minute = 0;
+	else
+		++minute;
+
+	W = minute;
+	W = decadj( W );
 	RTCVALH = W;
 
 	rtc_wr_disable();	// disable rtc writes
@@ -96,12 +121,21 @@ void rtc_inc_minute( void )
 
 void rtc_dec_minute( void )
 {
+	uns8 minute;
+	
 	while( RTCSYNC );	// wait until safe to write
 	RTCPTR0 = 0;		// select minutes in register pointer
 	rtc_wr_enable();	// enable rtc writes
 
-	W = RTCVALH;
-	W = decadj( --W );
+	minute = RTCVALH;
+	if( minute == 0 )
+		minute = 0x59;
+	else
+		minute += 0x99;	// this is the same as subtracting 1 in 
+						// BCD format. Tricky!
+	
+	W = minute;
+	W = decadj( W );
 	RTCVALH = W;
 
 	rtc_wr_disable();	// disable rtc writes
@@ -109,12 +143,20 @@ void rtc_dec_minute( void )
 
 void rtc_inc_second( void )
 {
+	uns8 second;
+	
 	while( RTCSYNC );	// wait until safe to write
 	RTCPTR0 = 0;		// select seconds in register pointer
 	rtc_wr_enable();	// enable rtc writes
 
-	W = RTCVALL;
-	W = decadj( ++W );
+	second = RTCVALL;
+	if( second == 0x59 )
+		second = 0;
+	else
+		second++;
+
+	W = second;
+	W = decadj( W );
 	RTCVALL = W;
 
 	rtc_wr_disable();	// disable rtc writes
@@ -122,12 +164,21 @@ void rtc_inc_second( void )
 
 void rtc_dec_second( void )
 {
+	uns8 second;
+	
 	while( RTCSYNC );	// wait until safe to write
 	RTCPTR0 = 0;		// select seconds in register pointer
 	rtc_wr_enable();	// enable rtc writes
 
-	W = RTCVALL;
-	W = decadj( --W );
+	second = RTCVALL;
+	if( second == 0 )
+		second = 0x59;
+	else
+		second += 0x99;	// this is the same as subtracting 1 in 
+						// BCD format. Tricky!
+
+	W = second;
+	W = decadj( W );
 	RTCVALL = W;
 
 	rtc_wr_disable();	// disable rtc writes

@@ -72,6 +72,59 @@ void led_load_hour( uns8 hour )
 	led_row[3].7 = hour.7;
 }	
 
+void led_adj_hour( uns8 hour )
+{
+	led_row[4] = 0b10100000;
+	led_row[3] = 0b10100000;
+	led_row[2] = 0b11100000;
+	led_row[1] = 0b10100000;
+	led_row[0] = 0b10100000;
+
+	led_row[0].0 = hour.0;
+	led_row[1].0 = hour.1;
+	led_row[2].0 = hour.2;
+	led_row[3].0 = hour.3;
+	led_row[0].1 = hour.4;
+	led_row[1].1 = hour.5;
+	led_row[2].1 = hour.6;
+	led_row[3].1 = hour.7;
+}	
+
+void led_adj_minute( uns8 minute )
+{
+	led_row[4] = 0b10100000;
+	led_row[3] = 0b11100000;
+	led_row[2] = 0b10100000;
+	led_row[1] = 0b10100000;
+	led_row[0] = 0b10100000;
+	
+	led_row[0].0 = minute.0;
+	led_row[1].0 = minute.1;
+	led_row[2].0 = minute.2;
+	led_row[3].0 = minute.3;
+	led_row[0].1 = minute.4;
+	led_row[1].1 = minute.5;
+	led_row[2].1 = minute.6;
+	led_row[3].1 = minute.7;
+}	
+
+void led_adj_second( uns8 second )
+{
+	led_row[4] = 0b11100000;
+	led_row[3] = 0b10000000;
+	led_row[2] = 0b11100000;
+	led_row[1] = 0b00100000;
+	led_row[0] = 0b11100000;
+	
+	led_row[0].0 = second.0;
+	led_row[1].0 = second.1;
+	led_row[2].0 = second.2;
+	led_row[3].0 = second.3;
+	led_row[0].1 = second.4;
+	led_row[1].1 = second.5;
+	led_row[2].1 = second.6;
+	led_row[3].1 = second.7;
+}
 
 void led_load_logo( void )
 {
@@ -101,20 +154,20 @@ void led_show_row( uns8 row )
 void led_show_icon( uns8 icon )
 {
 	switch( icon ) {
-		case 0:	led_row[4].4 = 1;	break; 
-		case 1:	led_row[4].5 = 1;	break; 
-		case 2:	led_row[4].3 = 1;	break; 
-		case 3:	led_row[4].1 = 1;	break; 
+		case BUTTON_T:	led_row[4].5 = 1;	break; 
+		case BUTTON_O:	led_row[4].4 = 1;	break; 
+		case BUTTON_S:	led_row[4].2 = 1;	break; 
+		case BUTTON_X:	led_row[4].0 = 1;	break; 
 	}	
 }
 
 void led_hide_icon( uns8 icon )
 {
 	switch( icon ) {
-		case 0:	led_row[4].4 = 0;	break; 
-		case 1:	led_row[4].5 = 0;	break; 
-		case 2:	led_row[4].3 = 0;	break; 
-		case 3:	led_row[4].1 = 0;	break; 
+		case BUTTON_T:	led_row[4].5 = 0;	break; 
+		case BUTTON_O:	led_row[4].4 = 0;	break; 
+		case BUTTON_S:	led_row[4].2 = 0;	break; 
+		case BUTTON_X:	led_row[4].0 = 0;	break; 
 	}	
 }		
 

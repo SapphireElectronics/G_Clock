@@ -36,18 +36,31 @@
    	28	RB7		Dout	Row8	RB7		LED Row 8 / ICSP Data
 */
 
+// button identifiers
+enum { BUTTON_O, BUTTON_T, BUTTON_X, BUTTON_S };
+
 #include "rtc.h"
 #include "led.h"
 #include "touch.h"
+#include "op.h"
 
 #include "rtc.c"
 #include "led.c"
 #include "touch.c"
-
-	
+#include "op.c"
 
 void main(void)
 {
+	OSCTUNE = 0b10001000;	// 31.25 clock from HSINTOSC, increased by about 5% to tune RTCC
+	
+	uns8 pressed[4];
+	uns8 key;
+	uns8 handled[4];
+	uns8 sec;
+	uns8 tmp[4];
+	uns8 t;
+	clearRAM();
+
 	ADCON1 = 0x1f;
 	
 	TRISB = 0x00;
@@ -80,32 +93,9 @@ void main(void)
 		}	
 	}		
 	
-	uns8 sec;
 	led_clear();
 	
 	sec = 0;
-	
-/*	
-	while( 1 )
-	{
-		sec++;
-		
-		led_load_second( sec );
-		
-		for( delay = 0; delay < 200; delay++ )	// 200 x 5 x 1ms = 1.25 seconds
-		{
-			for( row=0; row <=4; row++ )
-			{
-				led_show_row( row );
-
-				while( !TMR0IF )
-					;
-				
-				TMR0IF = 0;
-			}	
-		}	
-	}		
-*/	
 	
 	rtc_init();
 	
@@ -113,15 +103,17 @@ void main(void)
 	rtc_set_minute( 0x35 );
 	
 	touch_init();
+	op_init();
 
-	uns8 tmp[4];
-	uns8 t;
+
 
 	while( 1 )
 	{
-		led_load_second( rtc_get_second() );
-		led_load_minute( rtc_get_minute() );
-		led_load_hour( rtc_get_hour() );
+			
+//		led_load_second( rtc_get_second() );
+//		led_load_minute( rtc_get_minute() );
+//		led_load_hour( rtc_get_hour() );
+		op_task();
 		
 
 		for( row=0; row <=4; row++ )
@@ -136,27 +128,24 @@ void main(void)
 			if( row < 4 )
 			{
 				if( touch_filter( row ) )
+				{
 					led_show_icon( row );
+					pressed[ row ] = 1;
+				}	
 				else
+				{
 					led_hide_icon( row );
-				
+					pressed[ row ] = 0;
+					handled[ row ] = 0;
+				}	
 
-#if 0
-				t = touch_sample( row );
-				tmp[row] = t;
+			}
 			
-				if( t < 78 )
-					led_show_icon( row );
-				else
-					led_hide_icon( row );
-#endif
-			}		
-
+			if( pressed[ row ] && !handled[ row ] )
+			{
+				op_proc( row );
+				handled[ row ] = 1;
+			}	
 		}	
-		
-//		tmp = touch_sample( 2 );
 	}		
-
-
-	
 }

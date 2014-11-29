@@ -3,12 +3,13 @@
 
 #include "touch.h"
 
-#define TOUCH_THRESHOLD 5
+#define TOUCH_THRESHOLD 20
 
-//uns8 touch_count;
 uns8 touch_value[4];
 uns8 touch_state[4];
 uns8 touch_count[4];
+uns8 touch_result[4];
+uns8 touch_low_pass_count[4];
 
 void touch_init( void )
 {
@@ -61,6 +62,10 @@ void touch_init( void )
 	touch_value[1] = 0;
 	touch_value[2] = 0;
 	touch_value[3] = 0;
+	touch_low_pass_count[0] = 0;
+	touch_low_pass_count[1] = 0;
+	touch_low_pass_count[2] = 0;
+	touch_low_pass_count[3] = 0;
 }
 
 #define WAIT_COUNT 4
@@ -114,63 +119,74 @@ uns8 touch_sample( uns8 button )
 	ANCON0 = 0b11111111;
 	ANCON1 = 0b00011111;
 
+	// cap sense values are never higher that 0x7f, so shift up
+	// one bit to gain some precision
+	if( ADRESH >= 0x80 )
+		ADRESH = 0xff;
+	else
+		ADRESH <<= 1;
+			
+	ADRESH.0 = ADRESL.7;
+	touch_result[button] = ADRESH;
 	
 	// return the (left justified) result
 	return( ADRESH );
 }	
 
 
-uns8 t_s[4];
+// Use for debugging of cap sense to store latest sensed values
+//uns8 t_s[4];
 
 uns8 touch_filter( uns8 button )
 {
 	uns8 smp, val;
 	val = touch_value[ button ];
-	smp = touch_sample( button );
+	touch_sample( button );
+	smp = touch_result[ button ];
 	
-	t_s[button] = smp;
+	// Use for debugging of cap sense to store latest sensed values
+	//t_s[button] = smp;
 	
+	// if this is the first time through, take sample value as 
+	// average value
 	if( val == 0 )
 		val = smp;
 	
 	if( smp < (val-TOUCH_THRESHOLD) )
 	{
 		if( touch_count[ button ] < 4 )
-		{
 			touch_count[ button ]++;
-		}
 		else
-		{
 			touch_state[ button ] = 1;
-		}
 	}
 	else
 	{
 		if( touch_count[ button ] )
-		{
 			touch_count[ button ]--;
+		else
+			touch_state[ button ] = 0;
+	}
+
+	// update average value filter every 16 samples
+	if( ++touch_low_pass_count[ button ] >= 16 )
+	{
+		touch_low_pass_count[ button ] = 0;
+		
+		// if the button is not pressed, use a faster filter constant
+		if( touch_state[ button ] == 0 )
+		{
+			val -= ((val>>2) + Carry);
+			val += (smp>>2) + Carry;
 		}
 		else
 		{
-			touch_state[ button ] = 0;
+			val -= ((val>>4) + Carry);
+			val += (smp>>4) + Carry;
 		}
-	}
-	
-//	if( touch_state[ button ] == 0 ) 
-	{ 
-//		smp >>= 1;
-//		val >>= 1;
-//		val = ( val+val+val+smp ) >> 1;
-//		val += Carry;
-
-		val -= ((val>>3) + Carry);
-		val += (smp>>3) + Carry;
 		
+		// store the new filtered average value
 		touch_value[ button ] = val;
-	}
-	
-	
-	
+	}	
 	
 	return touch_state[ button ];
 }	
