@@ -4,6 +4,8 @@
 #pragma cdata[] = 0xBE, 0xF7, 0xD8, 0xFF
 #pragma cdata[] = 0xFD, 0xFB, 0xBF, 0xFB 
 
+#include "int18XXX.h"
+
 /* Pin mappings
 	Pn	Port	Type	Name	Chan	Details
    	01	MCLR	Pwr		MCLR			ICSP MLR/VPP
@@ -39,15 +41,35 @@
 // button identifiers
 enum { BUTTON_O, BUTTON_T, BUTTON_X, BUTTON_S };
 
-#include "rtcc.h"
+#include "rtc.h"
 #include "led.h"
 #include "touch.h"
 #include "op.h"
 
-#include "rtcc.c"
+void _highPriorityInt(void);
+
+#pragma origin 0x8
+interrupt highPriorityIntServer(void)
+{
+// W, STATUS and BSR are saved to shadow registers
+// handle the interrupt
+// 8 code words available including call and RETFIE
+	_highPriorityInt();
+// restore W, STATUS and BSR from shadow registers
+#pragma fastMode
+}
+
+void _highPriorityInt( void )
+{
+	if( TMR2IF )
+		rtc_int();
+}	
+
+#include "rtc.c"
 #include "led.c"
 #include "touch.c"
 #include "op.c"
+
 
 void main(void)
 {
@@ -77,6 +99,19 @@ void main(void)
 //	T0CON = 0b11000111;		// set TMR0 to overflow on 64k instructions cycles.  65ms
 	TMR0IF = 0;
 
+	IPEN = 0;
+	PEIE = 1;
+	GIE = 1;
+	
+	rtc_init();
+	
+	
+	rtc_set_hour( 0x11 );
+	rtc_set_minute( 0x35 );
+	
+
+	
+
 	led_init();
 	led_load_logo();
 
@@ -97,11 +132,6 @@ void main(void)
 	
 	sec = 0;
 	
-	rtc_init();
-	
-	rtc_set_hour( 0x11 );
-	rtc_set_minute( 0x35 );
-	
 	touch_init();
 	op_init();
 
@@ -109,6 +139,14 @@ void main(void)
 
 	while( 1 )
 	{
+		TMR2IE = 0;
+		if( rtc_tick >= 25 )
+		{
+			rtc_tick -= 25;
+			TMR2IE = 1;
+			rtc_increment();
+		}	
+		TMR2IE = 1;
 			
 //		led_load_second( rtc_get_second() );
 //		led_load_minute( rtc_get_minute() );
