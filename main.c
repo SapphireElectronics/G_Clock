@@ -39,12 +39,12 @@
 // button identifiers
 enum { BUTTON_O, BUTTON_T, BUTTON_X, BUTTON_S };
 
-#include "rtc.h"
+#include "rtcc.h"
 #include "led.h"
 #include "touch.h"
 #include "op.h"
 
-#include "rtc.c"
+#include "rtcc.c"
 #include "led.c"
 #include "touch.c"
 #include "op.c"

@@ -1,5 +1,5 @@
-#ifndef _RTC_H
-#define _RTC_H
+#ifndef _RTCC_H
+#define _RTCC_H
 
 void rtc_init( void );
 void rtc_wr_enable( void );
@@ -21,4 +21,4 @@ uns8 rtc_get_hour( void );
 
 
 
-#endif // _RTC_H
+#endif // _RTCC_H

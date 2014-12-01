@@ -1,7 +1,7 @@
-#ifndef _RTC_C
-#define _RTC_C
+#ifndef _RTCC_C
+#define _RTCC_C
 
-#include "rtc.h"
+#include "rtcc.h"
 
 void rtc_init( void )
 {
@@ -202,4 +202,4 @@ uns8 rtc_get_second( void )
 	return( RTCVALL );
 }	
 
-#endif // _RTC_C
+#endif // _RTCC_C

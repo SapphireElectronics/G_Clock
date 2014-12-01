@@ -1,7 +1,7 @@
 
 ; CC8E Version 1.3F, Copyright (c) B Knudsen Data
 ; C compiler for the PIC18 microcontrollers
-; ************  29. Nov 2014   0:00  *************
+; ************  30. Nov 2014  21:56  *************
 
 	processor  PIC18F26J53
 	radix  DEC
@@ -97,11 +97,11 @@ ci          EQU   0x16
 
 	GOTO main
 
-  ; FILE rtc.c
-			;#ifndef _RTC_C
-			;#define _RTC_C
+  ; FILE rtcc.c
+			;#ifndef _RTCC_C
+			;#define _RTCC_C
 			;
-			;#include "rtc.h"
+			;#include "rtcc.h"
 			;
 			;void rtc_init( void )
 			;{
@@ -1608,12 +1608,12 @@ m059	RETURN
 			;// button identifiers
 			;enum { BUTTON_O, BUTTON_T, BUTTON_X, BUTTON_S };
 			;
-			;#include "rtc.h"
+			;#include "rtcc.h"
 			;#include "led.h"
 			;#include "touch.h"
 			;#include "op.h"
 			;
-			;#include "rtc.c"
+			;#include "rtcc.c"
 			;#include "led.c"
 			;#include "touch.c"
 			;#include "op.c"
