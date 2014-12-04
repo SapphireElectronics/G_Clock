@@ -1,13 +1,14 @@
 
 ; CC8E Version 1.3F, Copyright (c) B Knudsen Data
 ; C compiler for the PIC18 microcontrollers
-; ************   1. Dec 2014   0:07  *************
+; ************   3. Dec 2014  23:51  *************
 
 	processor  PIC18F26J53
 	radix  DEC
 
 TBLPTR      EQU   0xFF6
 TABLAT      EQU   0xFF5
+PRODL       EQU   0xFF3
 INDF0       EQU   0xFEF
 POSTDEC0    EQU   0xFED
 FSR0H       EQU   0xFEA
@@ -57,15 +58,15 @@ EDG2SEL1    EQU   6
 EDG2POL     EQU   7
 TMR2IF      EQU   1
 TMR2IE      EQU   1
-rtc_second  EQU   0x17
-rtc_minute  EQU   0x18
-rtc_hour    EQU   0x19
-rtc_tick    EQU   0x1A
+rtc_second  EQU   0x18
+rtc_minute  EQU   0x19
+rtc_hour    EQU   0x1A
+rtc_tick    EQU   0x1B
 hour        EQU   0x11
 minute      EQU   0x11
 second      EQU   0xF7F
-led_mode    EQU   0x1B
-led_row     EQU   0x1C
+led_mode    EQU   0x1C
+led_row     EQU   0x1D
 second_2    EQU   0x11
 minute_2    EQU   0x11
 hour_2      EQU   0x11
@@ -73,23 +74,30 @@ hour_3      EQU   0x11
 minute_3    EQU   0x11
 second_3    EQU   0x11
 row         EQU   0x11
+data        EQU   0x12
+data_2      EQU   0x16
 icon        EQU   0x11
 icon_2      EQU   0x11
-touch_value EQU   0x21
-touch_state EQU   0x25
-touch_count EQU   0x29
-touch_low_pass_count EQU   0x31
+touch_value EQU   0x22
+touch_state EQU   0x26
+touch_count EQU   0x2A
+touch_low_pass_count EQU   0x32
 button      EQU   0x14
 wait        EQU   0x15
 button_2    EQU   0x11
 smp         EQU   0x12
 val         EQU   0x13
-state       EQU   0x35
+state       EQU   0x36
+param       EQU   0x37
 key         EQU   0x11
+data_3      EQU   0x15
+data_4      EQU   0x12
+key_2       EQU   0x13
+value       EQU   0x14
 sec         EQU   0x09
 row_2       EQU   0x0F
 delay       EQU   0x10
-ci          EQU   0x16
+ci          EQU   0x17
 
 	GOTO main
 
@@ -141,6 +149,13 @@ ci          EQU   0x16
 			;#include "led.h"
 			;#include "touch.h"
 			;#include "op.h"
+			;
+			;
+			;// Parameters
+			;// - brightness
+			;// - clock correction
+			;// - display timeout
+			;
 			;
 			;void _highPriorityInt(void);
 			;
@@ -411,6 +426,9 @@ rtc_increment
 	BRA   rtc_daw_hour
 			;		return;
 			;	}
+			;	
+			;	rtc_hour = 0;
+	CLRF  rtc_hour,0
 			;}	
 	RETURN
 			;
@@ -606,25 +624,57 @@ led_load_hour
 			;}	
 	RETURN
 			;
+			;const uns8 led_char[] = 
+			;{
+			;	0b01000000, 0b10100000, 0b11100000, 0b10100000, 0b10100000,		// A
+			;	0b11000000, 0b10100000, 0b11000000, 0b10100000, 0b11000000,		// B
+			;	0b01000000, 0b10100000, 0b10000000, 0b10100000, 0b01000000,		// C
+			;	0b11000000, 0b10100000, 0b10100000, 0b10100000, 0b11000000,		// D
+			;	0b11100000, 0b10000000, 0b11100000, 0b10000000, 0b11100000,		// E
+			;	0b11100000, 0b10000000, 0b11100000, 0b10000000, 0b10000000,		// F
+			;	0b01000000, 0b10100000, 0b10000000, 0b11100000, 0b01000000,		// G
+			;	0b10100000, 0b10100000, 0b11100000, 0b10100000, 0b10100000,		// H
+			;	0b01000000, 0b01000000, 0b01000000, 0b01000000, 0b11100000,		// I
+			;	0b00100000, 0b00100000, 0b00100000, 0b10100000, 0b01000000,		// J
+			;	0b10100000, 0b11000000, 0b10000000, 0b11000000, 0b10100000,		// K
+			;	0b10000000, 0b10000000, 0b10000000, 0b10000000, 0b11100000,		// L
+			;	0b10100000, 0b11100000, 0b10100000, 0b10100000, 0b10100000,		// M
+			;	0b10100000, 0b11100000, 0b11100000, 0b10100000, 0b10100000,		// N
+			;	0b01000000, 0b10100000, 0b10100000, 0b10100000, 0b01000000,		// O
+			;	0b11000000, 0b10100000, 0b11000000, 0b10000000, 0b10000000,		// P
+			;	0b01000000, 0b10100000, 0b10100000, 0b10100000, 0b01100000,		// Q
+			;	0b11000000, 0b10100000, 0b11000000, 0b11000000, 0b10100000,		// R
+			;	0b11100000, 0b10000000, 0b01000000, 0b00100000, 0b11100000,		// S
+			;	0b11100000, 0b01000000, 0b01000000, 0b01000000, 0b11100000,		// T
+			;	0b10100000, 0b10100000, 0b10100000, 0b10100000, 0b11100000,		// U
+			;	0b10100000, 0b10100000, 0b10100000, 0b10100000, 0b01000000,		// V
+			;	0b10100000, 0b10100000, 0b10100000, 0b11100000, 0b10100000,		// W
+			;	0b10100000, 0b10100000, 0b01000000, 0b10100000, 0b10100000,		// X
+			;	0b10100000, 0b10100000, 0b01000000, 0b01000000, 0b01000000,		// Y
+			;	0b11100000, 0b00100000, 0b01000000, 0b10000000, 0b11100000		// Z
+			;};	
+			;
+			;const uns8 led_value[] = 
+			;{
+			;	0b00000010, 0b00000101, 0b00000101, 0b00000101, 0b00000010,		// 0
+			;	0b00000010, 0b00000010, 0b00000010, 0b00000010, 0b00000010,		// 1
+			;	0b00000110, 0b00000001, 0b00000010, 0b00000100, 0b00000111,		// 2
+			;	0b00000110, 0b00000001, 0b00000010, 0b00000001, 0b00000110,		// 3
+			;	0b00000101, 0b00000101, 0b00000111, 0b00000001, 0b00000001,		// 4
+			;	0b00000111, 0b00000100, 0b00000110, 0b00000001, 0b00000110,		// 5
+			;	0b00000010, 0b00000100, 0b00000110, 0b00000101, 0b00000010,		// 6
+			;	0b00000111, 0b00000001, 0b00000010, 0b00000010, 0b00000010,		// 7
+			;	0b00000010, 0b00000101, 0b00000010, 0b00000101, 0b00000010,		// 8
+			;	0b00000010, 0b00000101, 0b00000011, 0b00000001, 0b00000010		// 9
+			;};
+			;
 			;void led_adj_hour( uns8 hour )
 			;{
 led_adj_hour
 	MOVWF hour_3,0
-			;	led_row[4] = 0b10100000;
-	MOVLW 160
-	MOVWF led_row+4,0
-			;	led_row[3] = 0b10100000;
-	MOVLW 160
-	MOVWF led_row+3,0
-			;	led_row[2] = 0b11100000;
-	MOVLW 224
-	MOVWF led_row+2,0
-			;	led_row[1] = 0b10100000;
-	MOVLW 160
-	MOVWF led_row+1,0
-			;	led_row[0] = 0b10100000;
-	MOVLW 160
-	MOVWF led_row,0
+			;	led_show_char( 'H' );
+	MOVLW 72
+	RCALL led_show_char
 			;
 			;	led_row[0].0 = hour.0;
 	BCF   led_row,0,0
@@ -665,21 +715,9 @@ led_adj_hour
 			;{
 led_adj_minute
 	MOVWF minute_3,0
-			;	led_row[4] = 0b10100000;
-	MOVLW 160
-	MOVWF led_row+4,0
-			;	led_row[3] = 0b11100000;
-	MOVLW 224
-	MOVWF led_row+3,0
-			;	led_row[2] = 0b10100000;
-	MOVLW 160
-	MOVWF led_row+2,0
-			;	led_row[1] = 0b10100000;
-	MOVLW 160
-	MOVWF led_row+1,0
-			;	led_row[0] = 0b10100000;
-	MOVLW 160
-	MOVWF led_row,0
+			;	led_show_char( 'M' );
+	MOVLW 77
+	RCALL led_show_char
 			;	
 			;	led_row[0].0 = minute.0;
 	BCF   led_row,0,0
@@ -720,21 +758,9 @@ led_adj_minute
 			;{
 led_adj_second
 	MOVWF second_3,0
-			;	led_row[4] = 0b11100000;
-	MOVLW 224
-	MOVWF led_row+4,0
-			;	led_row[3] = 0b10000000;
-	MOVLW 128
-	MOVWF led_row+3,0
-			;	led_row[2] = 0b11100000;
-	MOVLW 224
-	MOVWF led_row+2,0
-			;	led_row[1] = 0b00100000;
-	MOVLW 32
-	MOVWF led_row+1,0
-			;	led_row[0] = 0b11100000;
-	MOVLW 224
-	MOVWF led_row,0
+			;	led_show_char( 'S' );
+	MOVLW 83
+	RCALL led_show_char
 			;	
 			;	led_row[0].0 = second.0;
 	BCF   led_row,0,0
@@ -816,7 +842,7 @@ led_show_row
 	SETF  PORTC,0
 			;	LED_ROW_PORT = led_row[ row ];
 	CLRF  FSR0+1,0
-	MOVLW 28
+	MOVLW 29
 	ADDWF row,W,0
 	MOVWF FSR0,0
 	MOVFF INDF0,PORTB
@@ -827,73 +853,138 @@ led_show_row
 			;}	
 	RETURN
 			;
+			;void led_show_char( uns8 data )
+			;{
+led_show_char
+	MOVWF data,0
+			;	data -= 'A';		// offset to first character in table
+	MOVLW 65
+	SUBWF data,1,0
+			;	data += (data<<2);	// multiply by 5 (5 bytes per character)
+	MOVF  data,W,0
+	MULLW 4
+	MOVF  PRODL,W,0
+	ADDWF data,1,0
+			;	led_row[4] = led_char[data++];
+	MOVLW 5
+	ADDWF data,W,0
+	RCALL _const1
+	MOVWF led_row+4,0
+	INCF  data,1,0
+			;	led_row[3] = led_char[data++];
+	MOVLW 5
+	ADDWF data,W,0
+	RCALL _const1
+	MOVWF led_row+3,0
+	INCF  data,1,0
+			;	led_row[2] = led_char[data++];
+	MOVLW 5
+	ADDWF data,W,0
+	RCALL _const1
+	MOVWF led_row+2,0
+	INCF  data,1,0
+			;	led_row[1] = led_char[data++];
+	MOVLW 5
+	ADDWF data,W,0
+	RCALL _const1
+	MOVWF led_row+1,0
+	INCF  data,1,0
+			;	led_row[0] = led_char[data++];
+	MOVLW 5
+	ADDWF data,W,0
+	RCALL _const1
+	MOVWF led_row,0
+	INCF  data,1,0
+			;}	
+	RETURN
+			;
+			;void led_show_value( uns8 data )
+			;{
+led_show_value
+	MOVWF data_2,0
+			;	data += (data<<2);	// multiply by 5 (5 bytes per character)
+	MOVF  data_2,W,0
+	MULLW 4
+	MOVF  PRODL,W,0
+	ADDWF data_2,1,0
+			;	led_row[4] &= 0b11111000;
+	MOVLW 248
+	ANDWF led_row+4,1,0
+			;	led_row[4] |= led_value[data++];
+	MOVLW 135
+	ADDWF data_2,W,0
+	RCALL _const1
+	IORWF led_row+4,1,0
+	INCF  data_2,1,0
+			;	led_row[3] &= 0b11111000;
+	MOVLW 248
+	ANDWF led_row+3,1,0
+			;	led_row[3] |= led_value[data++];
+	MOVLW 135
+	ADDWF data_2,W,0
+	RCALL _const1
+	IORWF led_row+3,1,0
+	INCF  data_2,1,0
+			;	led_row[2] &= 0b11111000;
+	MOVLW 248
+	ANDWF led_row+2,1,0
+			;	led_row[2] |= led_value[data++];
+	MOVLW 135
+	ADDWF data_2,W,0
+	RCALL _const1
+	IORWF led_row+2,1,0
+	INCF  data_2,1,0
+			;	led_row[1] &= 0b11111000;
+	MOVLW 248
+	ANDWF led_row+1,1,0
+			;	led_row[1] |= led_value[data++];
+	MOVLW 135
+	ADDWF data_2,W,0
+	RCALL _const1
+	IORWF led_row+1,1,0
+	INCF  data_2,1,0
+			;	led_row[0] &= 0b11111000;
+	MOVLW 248
+	ANDWF led_row,1,0
+			;	led_row[0] |= led_value[data++];
+	MOVLW 135
+	ADDWF data_2,W,0
+	RCALL _const1
+	IORWF led_row,1,0
+	INCF  data_2,1,0
+			;}	
+	RETURN
+			;
+			;
 			;void led_show_icon( uns8 icon )
 			;{
 led_show_icon
 	MOVWF icon,0
+			;#if 0
 			;	switch( icon ) {
-	MOVF  icon,W,0
-	XORLW 1
-	BTFSC 0xFD8,Zero_,0
-	BRA   m010
-	XORLW 1
-	BTFSC 0xFD8,Zero_,0
-	BRA   m011
-	XORLW 3
-	BTFSC 0xFD8,Zero_,0
-	BRA   m012
-	XORLW 1
-	BTFSC 0xFD8,Zero_,0
-	BRA   m013
-	BRA   m014
-			;		case BUTTON_T:	led_row[4].5 = 1;	break; 
-m010	BSF   led_row+4,5,0
-	BRA   m014
-			;		case BUTTON_O:	led_row[4].4 = 1;	break; 
-m011	BSF   led_row+4,4,0
-	BRA   m014
-			;		case BUTTON_S:	led_row[4].2 = 1;	break; 
-m012	BSF   led_row+4,2,0
-	BRA   m014
+			;		case BUTTON_T:	led_row[4].3 = 1;	break; 
+			;		case BUTTON_O:	led_row[4].2 = 1;	break; 
+			;		case BUTTON_S:	led_row[4].1 = 1;	break; 
 			;		case BUTTON_X:	led_row[4].0 = 1;	break; 
-m013	BSF   led_row+4,0,0
 			;	}	
+			;#endif
 			;}
-m014	RETURN
+	RETURN
 			;
 			;void led_hide_icon( uns8 icon )
 			;{
 led_hide_icon
 	MOVWF icon_2,0
+			;#if 0
 			;	switch( icon ) {
-	MOVF  icon_2,W,0
-	XORLW 1
-	BTFSC 0xFD8,Zero_,0
-	BRA   m015
-	XORLW 1
-	BTFSC 0xFD8,Zero_,0
-	BRA   m016
-	XORLW 3
-	BTFSC 0xFD8,Zero_,0
-	BRA   m017
-	XORLW 1
-	BTFSC 0xFD8,Zero_,0
-	BRA   m018
-	BRA   m019
-			;		case BUTTON_T:	led_row[4].5 = 0;	break; 
-m015	BCF   led_row+4,5,0
-	BRA   m019
-			;		case BUTTON_O:	led_row[4].4 = 0;	break; 
-m016	BCF   led_row+4,4,0
-	BRA   m019
-			;		case BUTTON_S:	led_row[4].2 = 0;	break; 
-m017	BCF   led_row+4,2,0
-	BRA   m019
+			;		case BUTTON_T:	led_row[4].3 = 0;	break; 
+			;		case BUTTON_O:	led_row[4].2 = 0;	break; 
+			;		case BUTTON_S:	led_row[4].1 = 0;	break; 
 			;		case BUTTON_X:	led_row[4].0 = 0;	break; 
-m018	BCF   led_row+4,0,0
-			;	}	
+			;	}
+			;#endif	
 			;}		
-m019	RETURN
+	RETURN
 			;
 			;void led_init( void )
 			;{
@@ -1048,12 +1139,12 @@ touch_sample
 			;	
 			;	// select ANx as analog input and wait
 			;	TRISA = touch_button_tris[ button ];
-	MOVLW 5
+	MOVLW 185
 	ADDWF button,W,0
 	RCALL _const1
 	MOVWF TRISA,0
 			;	ANCON0 = touch_button_adcon[ button ];
-	MOVLW 9
+	MOVLW 189
 	ADDWF button,W,0
 	RCALL _const1
 	MOVLB 15
@@ -1070,7 +1161,7 @@ touch_sample
 			;	
 			;	// select input ANx, drain charge on input channel
 			;	CHS0 = touch_button_chs0[ button ];
-	MOVLW 13
+	MOVLW 193
 	ADDWF button,W,0
 	RCALL _const1
 	XORLW 0
@@ -1079,7 +1170,7 @@ touch_sample
 	BTFSC 0xFD8,Zero_,0
 	BCF   0xFC2,CHS0,0
 			;	CHS1 = touch_button_chs1[ button ];
-	MOVLW 17
+	MOVLW 197
 	ADDWF button,W,0
 	RCALL _const1
 	XORLW 0
@@ -1111,24 +1202,24 @@ touch_sample
 			;
 			;	for( wait = 0; wait < WAIT_COUNT; wait++ )
 	CLRF  wait,0
-m020	MOVLW 4
+m010	MOVLW 4
 	CPFSLT wait,0
-	BRA   m021
+	BRA   m011
 			;		;
 	INCF  wait,1,0
-	BRA   m020
+	BRA   m010
 			;		
 			;	// stop charge, start conversion
 			;	EDG1STAT = 0;
-m021	BCF   0xFB2,EDG1STAT,0
+m011	BCF   0xFB2,EDG1STAT,0
 			;	GO = 1;
 	BSF   0xFC2,GO,0
 			;	
 			;	// wait until conversion is complete
 			;	while( GO )
-m022	BTFSC 0xFC2,GO,0
+m012	BTFSC 0xFC2,GO,0
 			;		;
-	BRA   m022
+	BRA   m012
 			;	
 			;	TRISA = 0b00000000;
 	CLRF  TRISA,0
@@ -1146,23 +1237,23 @@ m022	BTFSC 0xFC2,GO,0
 			;	if( ADRESH >= 0x80 )
 	MOVLW 127
 	CPFSGT ADRESH,0
-	BRA   m023
+	BRA   m013
 			;		ADRESH = 0xff;
 	SETF  ADRESH,0
 			;	else
-	BRA   m024
+	BRA   m014
 			;		ADRESH <<= 1;
-m023	BCF   0xFD8,Carry,0
+m013	BCF   0xFD8,Carry,0
 	RLCF  ADRESH,1,0
 			;			
 			;	ADRESH.0 = ADRESL.7;
-m024	BTFSS ADRESL,7,0
+m014	BTFSS ADRESL,7,0
 	BCF   ADRESH,0,0
 	BTFSC ADRESL,7,0
 	BSF   ADRESH,0,0
 			;	touch_result[button] = ADRESH;
 	CLRF  FSR0+1,0
-	MOVLW 45
+	MOVLW 46
 	ADDWF button,W,0
 	MOVWF FSR0,0
 	MOVFF ADRESH,INDF0
@@ -1184,7 +1275,7 @@ touch_filter
 			;	uns8 smp, val;
 			;	val = touch_value[ button ];
 	CLRF  FSR0+1,0
-	MOVLW 33
+	MOVLW 34
 	ADDWF button_2,W,0
 	MOVWF FSR0,0
 	MOVFF INDF0,val
@@ -1193,7 +1284,7 @@ touch_filter
 	RCALL touch_sample
 			;	smp = touch_result[ button ];
 	CLRF  FSR0+1,0
-	MOVLW 45
+	MOVLW 46
 	ADDWF button_2,W,0
 	MOVWF FSR0,0
 	MOVFF INDF0,smp
@@ -1213,54 +1304,54 @@ touch_filter
 	MOVLW 20
 	SUBWF val,W,0
 	CPFSLT smp,0
-	BRA   m026
+	BRA   m016
 			;	{
 			;		if( touch_count[ button ] < 4 )
 	CLRF  FSR0+1,0
-	MOVLW 41
+	MOVLW 42
 	ADDWF button_2,W,0
 	MOVWF FSR0,0
 	MOVLW 4
 	CPFSLT INDF0,0
-	BRA   m025
+	BRA   m015
 			;			touch_count[ button ]++;
 	CLRF  FSR0+1,0
-	MOVLW 41
+	MOVLW 42
 	ADDWF button_2,W,0
 	MOVWF FSR0,0
 	INCF  INDF0,1,0
 			;		else
-	BRA   m028
+	BRA   m018
 			;			touch_state[ button ] = 1;
-m025	CLRF  FSR0+1,0
-	MOVLW 37
+m015	CLRF  FSR0+1,0
+	MOVLW 38
 	ADDWF button_2,W,0
 	MOVWF FSR0,0
 	MOVLW 1
 	MOVWF INDF0,0
 			;	}
 			;	else
-	BRA   m028
+	BRA   m018
 			;	{
 			;		if( touch_count[ button ] )
-m026	CLRF  FSR0+1,0
-	MOVLW 41
+m016	CLRF  FSR0+1,0
+	MOVLW 42
 	ADDWF button_2,W,0
 	MOVWF FSR0,0
 	MOVF  INDF0,W,0
 	BTFSC 0xFD8,Zero_,0
-	BRA   m027
+	BRA   m017
 			;			touch_count[ button ]--;
 	CLRF  FSR0+1,0
-	MOVLW 41
+	MOVLW 42
 	ADDWF button_2,W,0
 	MOVWF FSR0,0
 	DECF  INDF0,1,0
 			;		else
-	BRA   m028
+	BRA   m018
 			;			touch_state[ button ] = 0;
-m027	CLRF  FSR0+1,0
-	MOVLW 37
+m017	CLRF  FSR0+1,0
+	MOVLW 38
 	ADDWF button_2,W,0
 	MOVWF FSR0,0
 	CLRF  INDF0,0
@@ -1268,18 +1359,18 @@ m027	CLRF  FSR0+1,0
 			;
 			;	// update average value filter every 16 samples
 			;	if( ++touch_low_pass_count[ button ] >= 16 )
-m028	CLRF  FSR0+1,0
-	MOVLW 49
+m018	CLRF  FSR0+1,0
+	MOVLW 50
 	ADDWF button_2,W,0
 	MOVWF FSR0,0
 	INCF  INDF0,1,0
 	MOVLW 15
 	CPFSGT INDF0,0
-	BRA   m031
+	BRA   m021
 			;	{
 			;		touch_low_pass_count[ button ] = 0;
 	CLRF  FSR0+1,0
-	MOVLW 49
+	MOVLW 50
 	ADDWF button_2,W,0
 	MOVWF FSR0,0
 	CLRF  INDF0,0
@@ -1287,12 +1378,12 @@ m028	CLRF  FSR0+1,0
 			;		// if the button is not pressed, use a faster filter constant
 			;		if( touch_state[ button ] == 0 )
 	CLRF  FSR0+1,0
-	MOVLW 37
+	MOVLW 38
 	ADDWF button_2,W,0
 	MOVWF FSR0,0
 	MOVF  INDF0,W,0
 	BTFSS 0xFD8,Zero_,0
-	BRA   m029
+	BRA   m019
 			;		{
 			;			val -= ((val>>2) + Carry);
 	RRNCF val,W,0
@@ -1310,10 +1401,10 @@ m028	CLRF  FSR0+1,0
 	ADDWF val,1,0
 			;		}
 			;		else
-	BRA   m030
+	BRA   m020
 			;		{
 			;			val -= ((val>>4) + Carry);
-m029	SWAPF val,W,0
+m019	SWAPF val,W,0
 	ANDLW 15
 	BTFSC 0xFD8,Carry,0
 	ADDLW 1
@@ -1328,16 +1419,16 @@ m029	SWAPF val,W,0
 			;		
 			;		// store the new filtered average value
 			;		touch_value[ button ] = val;
-m030	CLRF  FSR0+1,0
-	MOVLW 33
+m020	CLRF  FSR0+1,0
+	MOVLW 34
 	ADDWF button_2,W,0
 	MOVWF FSR0,0
 	MOVFF val,INDF0
 			;	}	
 			;	
 			;	return touch_state[ button ];
-m031	CLRF  FSR0+1,0
-	MOVLW 37
+m021	CLRF  FSR0+1,0
+	MOVLW 38
 	ADDWF button_2,W,0
 	MOVWF FSR0,0
 	MOVF  INDF0,W,0
@@ -1359,11 +1450,47 @@ touch_task
 			;
 			;uns8 state;
 			;
+			;struct
+			;{
+			;	uns8 value;
+			;	uns8 min, max;
+			;} param[4];
+			;
 			;void op_init( void )
 			;{
 op_init
 			;	state = ST_RUN;
 	CLRF  state,0
+			;	
+			;	param[0].value = 5;
+	MOVLW 5
+	MOVWF param,0
+			;	param[0].min = 1;
+	MOVLW 1
+	MOVWF param+1,0
+			;	param[0].max = 9;
+	MOVLW 9
+	MOVWF param+2,0
+			;	
+			;	param[1].value = 10;
+	MOVLW 10
+	MOVWF param+3,0
+			;	param[1].min = 5;
+	MOVLW 5
+	MOVWF param+4,0
+			;	param[1].max = 20;
+	MOVLW 20
+	MOVWF param+5,0
+			;
+			;	param[0].value = 128;
+	MOVLW 128
+	MOVWF param,0
+			;	param[0].min = 1;
+	MOVLW 1
+	MOVWF param+1,0
+			;	param[0].max = 255;
+	SETF  param+2,0
+			;	
 			;}
 	RETURN
 			;
@@ -1373,23 +1500,29 @@ op_task
 			;	switch( state )	{
 	MOVF  state,W,0
 	BTFSC 0xFD8,Zero_,0
-	BRA   m032
+	BRA   m022
 	XORLW 1
 	BTFSC 0xFD8,Zero_,0
-	BRA   m033
+	BRA   m023
 	XORLW 3
 	BTFSC 0xFD8,Zero_,0
-	BRA   m034
+	BRA   m024
 	XORLW 1
 	BTFSC 0xFD8,Zero_,0
-	BRA   m035
+	BRA   m025
 	XORLW 7
 	BTFSC 0xFD8,Zero_,0
-	BRA   m036
-	BRA   m036
+	BRA   m026
+	XORLW 1
+	BTFSC 0xFD8,Zero_,0
+	BRA   m027
+	XORLW 3
+	BTFSC 0xFD8,Zero_,0
+	BRA   m028
+	BRA   m029
 			;		case ST_RUN:
 			;			led_clear();
-m032	RCALL led_clear
+m022	RCALL led_clear
 			;			led_load_second( rtc_get_second() );
 	RCALL rtc_get_second
 	RCALL led_load_second
@@ -1400,32 +1533,62 @@ m032	RCALL led_clear
 	RCALL rtc_get_hour
 	RCALL led_load_hour
 			;			break;
-	BRA   m036
+	BRA   m029
 			;			
 			;		case ST_ADJ_HOUR:
 			;			led_adj_hour( rtc_get_hour() );
-m033	RCALL rtc_get_hour
+m023	RCALL rtc_get_hour
 	RCALL led_adj_hour
 			;			break;	
-	BRA   m036
+	BRA   m029
 			;				
 			;		case ST_ADJ_MIN:
 			;			led_adj_minute( rtc_get_minute() );
-m034	RCALL rtc_get_minute
+m024	RCALL rtc_get_minute
 	RCALL led_adj_minute
 			;			break;	
-	BRA   m036
+	BRA   m029
 			;
 			;		case ST_ADJ_SEC:
 			;			led_adj_second( rtc_get_second() );
-m035	RCALL rtc_get_second
+m025	RCALL rtc_get_second
 	RCALL led_adj_second
 			;			break;	
+	BRA   m029
 			;
-			;		case ST_ADJ_BRIGHT:
+			;		case ST_BRIGHT:
+			;			led_show_char( 'B' );
+m026	MOVLW 66
+	RCALL led_show_char
+			;			op_show_param( 0 );
+	MOVLW 0
+	RCALL op_show_param
+			;			break;
+	BRA   m029
+			;			
+			;		case ST_DELAY:
+			;			led_show_char( 'D' );
+m027	MOVLW 68
+	RCALL led_show_char
+			;			op_show_param( 1 );
+	MOVLW 1
+	RCALL op_show_param
+			;			break;
+	BRA   m029
+			;
+			;		case ST_CLOCK:
+			;			led_show_char( 'C' );
+m028	MOVLW 67
+	RCALL led_show_char
+			;			op_show_param( 2 );
+	MOVLW 2
+	RCALL op_show_param
+			;			break;
+			;
+			;
 			;	}	
 			;}	
-m036	RETURN
+m029	RETURN
 			;
 			;void op_proc( uns8 key )
 			;{
@@ -1434,98 +1597,203 @@ op_proc
 			;	switch( state )	{
 	MOVF  state,W,0
 	BTFSC 0xFD8,Zero_,0
-	BRA   m037
+	BRA   m039
 	XORLW 1
 	BTFSC 0xFD8,Zero_,0
-	BRA   m038
+	BRA   m030
 	XORLW 3
 	BTFSC 0xFD8,Zero_,0
-	BRA   m041
+	BRA   m032
 	XORLW 1
 	BTFSC 0xFD8,Zero_,0
-	BRA   m044
+	BRA   m034
 	XORLW 7
 	BTFSC 0xFD8,Zero_,0
-	BRA   m047
-	BRA   m047
+	BRA   m036
+	XORLW 1
+	BTFSC 0xFD8,Zero_,0
+	BRA   m037
+	XORLW 3
+	BTFSC 0xFD8,Zero_,0
+	BRA   m038
+	BRA   m039
 			;		case ST_RUN:
-			;			if( key == BUTTON_T )
-m037	DECFSZ key,W,0
-	BRA   m047
-			;				state = ST_ADJ_HOUR;
-	MOVLW 1
-	MOVWF state,0
 			;			break;	
-	BRA   m047
 			;				
 			;		case ST_ADJ_HOUR:
 			;			if( key == BUTTON_S )
-m038	MOVLW 3
+m030	MOVLW 3
 	CPFSEQ key,0
-	BRA   m039
+	BRA   m031
 			;				rtc_inc_hour();
 	RCALL rtc_inc_hour
 			;			if( key == BUTTON_X )
-m039	MOVLW 2
+m031	MOVLW 2
 	CPFSEQ key,0
-	BRA   m040
+	BRA   m039
 			;				rtc_dec_hour();
 	RCALL rtc_dec_hour
-			;			if( key == BUTTON_T )
-m040	DECFSZ key,W,0
-	BRA   m047
-			;				state = ST_ADJ_MIN;
-	MOVLW 2
-	MOVWF state,0
 			;			break;			
-	BRA   m047
+	BRA   m039
 			;	
 			;		case ST_ADJ_MIN:
 			;			if( key == BUTTON_S )
-m041	MOVLW 3
+m032	MOVLW 3
 	CPFSEQ key,0
-	BRA   m042
+	BRA   m033
 			;				rtc_inc_minute();
 	RCALL rtc_inc_minute
 			;			if( key == BUTTON_X )
-m042	MOVLW 2
+m033	MOVLW 2
 	CPFSEQ key,0
-	BRA   m043
+	BRA   m039
 			;				rtc_dec_minute();
 	RCALL rtc_dec_minute
-			;			if( key == BUTTON_T )
-m043	DECFSZ key,W,0
-	BRA   m047
-			;				state = ST_ADJ_SEC;
-	MOVLW 3
-	MOVWF state,0
 			;			break;			
-	BRA   m047
+	BRA   m039
 			;
 			;		case ST_ADJ_SEC:
 			;			if( key == BUTTON_S )
-m044	MOVLW 3
+m034	MOVLW 3
 	CPFSEQ key,0
-	BRA   m045
+	BRA   m035
 			;				rtc_inc_second();
 	RCALL rtc_inc_second
 			;			if( key == BUTTON_X )
-m045	MOVLW 2
+m035	MOVLW 2
 	CPFSEQ key,0
-	BRA   m046
+	BRA   m039
 			;				rtc_dec_second();
 	RCALL rtc_dec_second
-			;			if( key == BUTTON_T )
-m046	DECFSZ key,W,0
-	BRA   m047
-			;				state = ST_RUN;
-	CLRF  state,0
 			;			break;			
+	BRA   m039
 			;
-			;		case ST_ADJ_BRIGHT:
+			;		case ST_BRIGHT:
+			;			op_adj_param( 0, key );
+m036	CLRF  data_4,0
+	MOVF  key,W,0
+	RCALL op_adj_param
+			;			break;
+	BRA   m039
+			;			
+			;		case ST_DELAY:
+			;			op_adj_param( 1, key );
+m037	MOVLW 1
+	MOVWF data_4,0
+	MOVF  key,W,0
+	RCALL op_adj_param
+			;			break;
+	BRA   m039
+			;			
+			;		case ST_CLOCK:
+			;			op_adj_param( 2, key );
+m038	MOVLW 2
+	MOVWF data_4,0
+	MOVF  key,W,0
+	RCALL op_adj_param
+			;			break;
 			;	}	
+			;
+			;	if( key == BUTTON_T )
+m039	DECFSZ key,W,0
+	BRA   m040
+			;	{
+			;		if( ++state >= ST_END )
+	INCF  state,1,0
+	MOVLW 7
+	CPFSLT state,0
+			;			state = ST_RUN;
+	CLRF  state,0
+			;	}		
+			;		
+			;
 			;}		
-m047	RETURN
+m040	RETURN
+			;	
+			;	
+			;void op_show_param( uns8 data )
+			;{
+op_show_param
+	MOVWF data_3,0
+			;	led_show_value( param[data].value );
+	CLRF  FSR0+1,0
+	MOVLW 3
+	MULWF data_3,0
+	MOVF  PRODL,W,0
+	ADDLW 55
+	MOVWF FSR0,0
+	MOVF  INDF0,W,0
+	BRA   led_show_value
+			;}	
+			;
+			;void op_adj_param( uns8 data, uns8 key )
+			;{
+op_adj_param
+	MOVWF key_2,0
+			;	uns8 value = param[data].value;
+	CLRF  FSR0+1,0
+	MOVLW 3
+	MULWF data_4,0
+	MOVF  PRODL,W,0
+	ADDLW 55
+	MOVWF FSR0,0
+	MOVFF INDF0,value
+			;	
+			;	// increment parameter
+			;	if( key == BUTTON_S )
+	MOVLW 3
+	CPFSEQ key_2,0
+	BRA   m041
+			;	{
+			;		if( value < param[data].max )
+	CLRF  FSR0+1,0
+	MOVLW 3
+	MULWF data_4,0
+	MOVF  PRODL,W,0
+	ADDLW 57
+	MOVWF FSR0,0
+	MOVF  INDF0,W,0
+	CPFSLT value,0
+	BRA   m041
+			;			param[data].value++;
+	CLRF  FSR0+1,0
+	MOVLW 3
+	MULWF data_4,0
+	MOVF  PRODL,W,0
+	ADDLW 55
+	MOVWF FSR0,0
+	INCF  INDF0,1,0
+			;	}
+			;	
+			;	// decrement parameter
+			;	if( key == BUTTON_X )
+m041	MOVLW 2
+	CPFSEQ key_2,0
+	BRA   m042
+			;	{
+			;		if( value > param[data].min )
+	CLRF  FSR0+1,0
+	MOVLW 3
+	MULWF data_4,0
+	MOVF  PRODL,W,0
+	ADDLW 56
+	MOVWF FSR0,0
+	MOVF  value,W,0
+	CPFSLT INDF0,0
+	BRA   m042
+			;			param[data].value--;
+	CLRF  FSR0+1,0
+	MOVLW 3
+	MULWF data_4,0
+	MOVF  PRODL,W,0
+	ADDLW 55
+	MOVWF FSR0,0
+	DECF  INDF0,1,0
+			;	}	
+			;	op_show_param( data );
+m042	MOVF  data_4,W,0
+	BRA   op_show_param
+			;}		
 
   ; FILE main.c
 			;
@@ -1550,11 +1818,11 @@ main
 			;	uns8 t;
 			;	clearRAM();
 	LFSR  0,3775 
-m048	CLRF  POSTDEC0,0
+m043	CLRF  POSTDEC0,0
 	MOVF  FSR0H,W,0
-	BNZ   m048
+	BNZ   m043
 	MOVF  FSR0,W,0
-	BNZ   m048
+	BNZ   m043
 	CLRF  INDF0,0
 			;
 			;	ADCON1 = 0x1f;
@@ -1614,36 +1882,36 @@ m048	CLRF  POSTDEC0,0
 			;
 			;	for( delay = 0; delay < 250; delay++ )	// 250 x 5 x 1ms = 1.25 seconds
 	CLRF  delay,0
-m049	MOVLW 250
+m044	MOVLW 250
 	CPFSLT delay,0
-	BRA   m053
+	BRA   m048
 			;	{
 			;		for( row=0; row <=4; row++ )
 	CLRF  row_2,0
-m050	MOVLW 5
+m045	MOVLW 5
 	CPFSLT row_2,0
-	BRA   m052
+	BRA   m047
 			;		{
 			;			led_show_row( row );
 	MOVF  row_2,W,0
 	RCALL led_show_row
 			;
 			;			while( !TMR0IF )
-m051	BTFSS 0xFF2,TMR0IF,0
+m046	BTFSS 0xFF2,TMR0IF,0
 			;				;
-	BRA   m051
+	BRA   m046
 			;				
 			;			TMR0IF = 0;
 	BCF   0xFF2,TMR0IF,0
 			;		}	
 	INCF  row_2,1,0
-	BRA   m050
+	BRA   m045
 			;	}		
-m052	INCF  delay,1,0
-	BRA   m049
+m047	INCF  delay,1,0
+	BRA   m044
 			;	
 			;	led_clear();
-m053	RCALL led_clear
+m048	RCALL led_clear
 			;	
 			;	sec = 0;
 	CLRF  sec,0
@@ -1658,11 +1926,11 @@ m053	RCALL led_clear
 			;	while( 1 )
 			;	{
 			;		TMR2IE = 0;
-m054	BCF   0xF9D,TMR2IE,0
+m049	BCF   0xF9D,TMR2IE,0
 			;		if( rtc_tick >= 25 )
 	MOVLW 24
 	CPFSGT rtc_tick,0
-	BRA   m055
+	BRA   m050
 			;		{
 			;			rtc_tick -= 25;
 	MOVLW 25
@@ -1673,7 +1941,7 @@ m054	BCF   0xF9D,TMR2IE,0
 	RCALL rtc_increment
 			;		}	
 			;		TMR2IE = 1;
-m055	BSF   0xF9D,TMR2IE,0
+m050	BSF   0xF9D,TMR2IE,0
 			;			
 			;//		led_load_second( rtc_get_second() );
 			;//		led_load_minute( rtc_get_minute() );
@@ -1684,18 +1952,18 @@ m055	BSF   0xF9D,TMR2IE,0
 			;
 			;		for( row=0; row <=4; row++ )
 	CLRF  row_2,0
-m056	MOVLW 5
+m051	MOVLW 5
 	CPFSLT row_2,0
-	BRA   m054
+	BRA   m049
 			;		{
 			;			led_show_row( row );
 	MOVF  row_2,W,0
 	RCALL led_show_row
 			;
 			;			while( !TMR0IF )
-m057	BTFSS 0xFF2,TMR0IF,0
+m052	BTFSS 0xFF2,TMR0IF,0
 			;				;
-	BRA   m057
+	BRA   m052
 			;				
 			;			TMR0IF = 0;
 	BCF   0xFF2,TMR0IF,0
@@ -1703,14 +1971,14 @@ m057	BTFSS 0xFF2,TMR0IF,0
 			;			if( row < 4 )
 	MOVLW 4
 	CPFSLT row_2,0
-	BRA   m059
+	BRA   m054
 			;			{
 			;				if( touch_filter( row ) )
 	MOVF  row_2,W,0
 	RCALL touch_filter
 	XORLW 0
 	BTFSC 0xFD8,Zero_,0
-	BRA   m058
+	BRA   m053
 			;				{
 			;					led_show_icon( row );
 	MOVF  row_2,W,0
@@ -1723,10 +1991,10 @@ m057	BTFSS 0xFF2,TMR0IF,0
 	MOVWF INDF0,0
 			;				}	
 			;				else
-	BRA   m059
+	BRA   m054
 			;				{
 			;					led_hide_icon( row );
-m058	MOVF  row_2,W,0
+m053	MOVF  row_2,W,0
 	RCALL led_hide_icon
 			;					pressed[ row ] = 0;
 	CLRF  FSR0+1,0
@@ -1744,19 +2012,19 @@ m058	MOVF  row_2,W,0
 			;			}
 			;			
 			;			if( pressed[ row ] && !handled[ row ] )
-m059	CLRF  FSR0+1,0
+m054	CLRF  FSR0+1,0
 	MOVF  row_2,W,0
 	MOVWF FSR0,0
 	MOVF  INDF0,W,0
 	BTFSC 0xFD8,Zero_,0
-	BRA   m060
+	BRA   m055
 	CLRF  FSR0+1,0
 	MOVLW 5
 	ADDWF row_2,W,0
 	MOVWF FSR0,0
 	MOVF  INDF0,W,0
 	BTFSS 0xFD8,Zero_,0
-	BRA   m060
+	BRA   m055
 			;			{
 			;				op_proc( row );
 	MOVF  row_2,W,0
@@ -1770,15 +2038,15 @@ m059	CLRF  FSR0+1,0
 	MOVWF INDF0,0
 			;			}	
 			;		}	
-m060	INCF  row_2,1,0
-	BRA   m056
+m055	INCF  row_2,1,0
+	BRA   m051
 			;	}		
 _const1
 	MOVWF ci,0
 	MOVF  ci,W,0
-	ADDLW 170
+	ADDLW 144
 	MOVWF TBLPTR,0
-	MOVLW 6
+	MOVLW 7
 	CLRF  TBLPTR+1,0
 	ADDWFC TBLPTR+1,1,0
 	CLRF  TBLPTR+2,0
@@ -1787,7 +2055,97 @@ _const1
 	RETURN
 	DW    0xFDFE
 	DW    0xBFFB
-	DW    0x17F
+	DW    0x407F
+	DW    0xE0A0
+	DW    0xA0A0
+	DW    0xA0C0
+	DW    0xA0C0
+	DW    0x40C0
+	DW    0x80A0
+	DW    0x40A0
+	DW    0xA0C0
+	DW    0xA0A0
+	DW    0xE0C0
+	DW    0xE080
+	DW    0xE080
+	DW    0x80E0
+	DW    0x80E0
+	DW    0x4080
+	DW    0x80A0
+	DW    0x40E0
+	DW    0xA0A0
+	DW    0xA0E0
+	DW    0x40A0
+	DW    0x4040
+	DW    0xE040
+	DW    0x2020
+	DW    0xA020
+	DW    0xA040
+	DW    0x80C0
+	DW    0xA0C0
+	DW    0x8080
+	DW    0x8080
+	DW    0xA0E0
+	DW    0xA0E0
+	DW    0xA0A0
+	DW    0xE0A0
+	DW    0xA0E0
+	DW    0x40A0
+	DW    0xA0A0
+	DW    0x40A0
+	DW    0xA0C0
+	DW    0x80C0
+	DW    0x4080
+	DW    0xA0A0
+	DW    0x60A0
+	DW    0xA0C0
+	DW    0xC0C0
+	DW    0xE0A0
+	DW    0x4080
+	DW    0xE020
+	DW    0x40E0
+	DW    0x4040
+	DW    0xA0E0
+	DW    0xA0A0
+	DW    0xE0A0
+	DW    0xA0A0
+	DW    0xA0A0
+	DW    0xA040
+	DW    0xA0A0
+	DW    0xA0E0
+	DW    0xA0A0
+	DW    0xA040
+	DW    0xA0A0
+	DW    0x40A0
+	DW    0x4040
+	DW    0x20E0
+	DW    0x8040
+	DW    0x2E0
+	DW    0x505
+	DW    0x205
+	DW    0x202
+	DW    0x202
+	DW    0x602
+	DW    0x201
+	DW    0x704
+	DW    0x106
+	DW    0x102
+	DW    0x506
+	DW    0x705
+	DW    0x101
+	DW    0x407
+	DW    0x106
+	DW    0x206
+	DW    0x604
+	DW    0x205
+	DW    0x107
+	DW    0x202
+	DW    0x202
+	DW    0x205
+	DW    0x205
+	DW    0x502
+	DW    0x103
+	DW    0x102
 	DW    0x402
 	DW    0xFE08
 	DW    0xFBFD
@@ -1825,34 +2183,38 @@ _const1
 ; 0x0000A2    2 word(s)  0 % : rtc_get_minute
 ; 0x00009E    2 word(s)  0 % : rtc_get_hour
 ; 0x000020    3 word(s)  0 % : rtc_int
-; 0x0000AA   15 word(s)  0 % : rtc_increment
-; 0x0000C8    4 word(s)  0 % : rtc_daw_hour
-; 0x0000D0    4 word(s)  0 % : rtc_daw_minute
-; 0x0000D8    4 word(s)  0 % : rtc_daw_second
-; 0x0000E0   26 word(s)  0 % : led_load_second
-; 0x000114   26 word(s)  0 % : led_load_minute
-; 0x000148   26 word(s)  0 % : led_load_hour
-; 0x000254   11 word(s)  0 % : led_load_logo
-; 0x00026A    6 word(s)  0 % : led_clear
-; 0x000276   12 word(s)  0 % : led_show_row
-; 0x0002EA    2 word(s)  0 % : led_init
-; 0x00028E   23 word(s)  0 % : led_show_icon
-; 0x0002BC   23 word(s)  0 % : led_hide_icon
-; 0x0002EE   43 word(s)  0 % : touch_init
-; 0x000344   89 word(s)  0 % : touch_sample
-; 0x0004E0    2 word(s)  0 % : op_init
-; 0x0004E4   33 word(s)  0 % : op_task
-; 0x000526   60 word(s)  0 % : op_proc
+; 0x0000AA   16 word(s)  0 % : rtc_increment
+; 0x0000CA    4 word(s)  0 % : rtc_daw_hour
+; 0x0000D2    4 word(s)  0 % : rtc_daw_minute
+; 0x0000DA    4 word(s)  0 % : rtc_daw_second
+; 0x0000E2   26 word(s)  0 % : led_load_second
+; 0x000116   26 word(s)  0 % : led_load_minute
+; 0x00014A   26 word(s)  0 % : led_load_hour
+; 0x000226   11 word(s)  0 % : led_load_logo
+; 0x00023C    6 word(s)  0 % : led_clear
+; 0x000248   12 word(s)  0 % : led_show_row
+; 0x000260   33 word(s)  0 % : led_show_char
+; 0x0002A2   41 word(s)  0 % : led_show_value
+; 0x0002FC    2 word(s)  0 % : led_init
+; 0x0002F4    2 word(s)  0 % : led_show_icon
+; 0x0002F8    2 word(s)  0 % : led_hide_icon
+; 0x000300   43 word(s)  0 % : touch_init
+; 0x000356   89 word(s)  0 % : touch_sample
+; 0x0004F2   19 word(s)  0 % : op_init
+; 0x000518   54 word(s)  0 % : op_task
+; 0x000584   70 word(s)  0 % : op_proc
+; 0x000610    9 word(s)  0 % : op_show_param
+; 0x000622   49 word(s)  0 % : op_adj_param
 ; 0x00000C    3 word(s)  0 % : _highPriorityInt
 ; 0x000008    2 word(s)  0 % : highPriorityIntServer
-; 0x00017C   36 word(s)  0 % : led_adj_hour
-; 0x0001C4   36 word(s)  0 % : led_adj_minute
-; 0x00020C   36 word(s)  0 % : led_adj_second
-; 0x000694   22 word(s)  0 % : _const1
-; 0x0003F6  116 word(s)  0 % : touch_filter
-; 0x0004DE    1 word(s)  0 % : touch_task
-; 0x00059E  123 word(s)  0 % : main
+; 0x00017E   28 word(s)  0 % : led_adj_hour
+; 0x0001B6   28 word(s)  0 % : led_adj_minute
+; 0x0001EE   28 word(s)  0 % : led_adj_second
+; 0x00077A  112 word(s)  0 % : _const1
+; 0x000408  116 word(s)  0 % : touch_filter
+; 0x0004F0    1 word(s)  0 % : touch_task
+; 0x000684  123 word(s)  0 % : main
 
-; RAM usage: 60 bytes (23 local), 3716 bytes free
-; Maximum call level: 3 (+2 for interrupt)
-; Total of 870 code words (2 %)
+; RAM usage: 73 bytes (24 local), 3703 bytes free
+; Maximum call level: 4 (+2 for interrupt)
+; Total of 1075 code words (3 %)

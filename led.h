@@ -9,6 +9,8 @@ void led_load_hour( uns8 hour );
 void led_load_logo();
 void led_clear( void );
 void led_show_row( uns8 row );
+void led_show_char( uns8 data );
+void led_show_value( uns8 data );
 void led_init( void );
 void led_set_mode( void );
 void led_show_icon( uns8 icon );

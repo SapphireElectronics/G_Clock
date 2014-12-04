@@ -46,6 +46,13 @@ enum { BUTTON_O, BUTTON_T, BUTTON_X, BUTTON_S };
 #include "touch.h"
 #include "op.h"
 
+
+// Parameters
+// - brightness
+// - clock correction
+// - display timeout
+
+
 void _highPriorityInt(void);
 
 #pragma origin 0x8

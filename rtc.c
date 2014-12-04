@@ -137,6 +137,8 @@ void rtc_increment( void )
 		rtc_daw_hour();
 		return;
 	}
+	
+	rtc_hour = 0;
 }	
 
 void rtc_daw_hour( void )
