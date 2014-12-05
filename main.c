@@ -1,8 +1,13 @@
 #pragma chip PIC18F26J53
 
-#pragma cdata[0x7ffc]
-#pragma cdata[] = 0xBE, 0xF7, 0xD8, 0xFF
-#pragma cdata[] = 0xFD, 0xFB, 0xBF, 0xFB 
+#pragma config[0] = 0xbe
+#pragma config[1] = 0xf7
+#pragma config[2] = 0xd8
+#pragma config[3] = 0xff
+#pragma config[4] = 0xfd
+#pragma config[5] = 0xff
+#pragma config[6] = 0xbf
+#pragma config[7] = 0xff
 
 #include "int18XXX.h"
 
@@ -45,6 +50,7 @@ enum { BUTTON_O, BUTTON_T, BUTTON_X, BUTTON_S };
 #include "led.h"
 #include "touch.h"
 #include "op.h"
+#include "eedata.h"
 
 
 // Parameters
@@ -54,6 +60,22 @@ enum { BUTTON_O, BUTTON_T, BUTTON_X, BUTTON_S };
 
 
 void _highPriorityInt(void);
+
+
+struct
+{
+	uns8 value;
+	uns8 min, max;
+} param[4];
+
+
+#pragma cdata[0x6000]		// parameter block
+#pragma cdata[] = 0x0501
+#pragma cdata[] = 0x0904
+#pragma cdata[] = 0x0109
+#pragma cdata[] = 0x5500
+#pragma cdata[] = 0x9900
+
 
 #pragma origin 0x8
 interrupt highPriorityIntServer(void)
@@ -72,11 +94,12 @@ void _highPriorityInt( void )
 		rtc_int();
 }	
 
+
 #include "rtc.c"
 #include "led.c"
 #include "touch.c"
 #include "op.c"
-
+#include "eedata.c"
 
 void main(void)
 {
@@ -116,11 +139,10 @@ void main(void)
 	rtc_set_hour( 0x11 );
 	rtc_set_minute( 0x35 );
 	
-
-	
-
 	led_init();
 	led_load_logo();
+
+	copyToRam( 0x60, &param[0], sizeof( param ) );
 
 	for( delay = 0; delay < 250; delay++ )	// 250 x 5 x 1ms = 1.25 seconds
 	{

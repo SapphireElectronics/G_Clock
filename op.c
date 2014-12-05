@@ -4,35 +4,18 @@
 #include "rtc.h"
 
 uns8 state;
-
-struct
-{
-	uns8 value;
-	uns8 min, max;
-} param[4];
+bit dirty;
 
 void op_init( void )
 {
 	state = ST_RUN;
-	
-	param[0].value = 5;
-	param[0].min = 1;
-	param[0].max = 9;
-	
-	param[1].value = 10;
-	param[1].min = 5;
-	param[1].max = 20;
-
-	param[0].value = 128;
-	param[0].min = 1;
-	param[0].max = 255;
-	
 }
 
 void op_task( void )
 {
 	switch( state )	{
 		case ST_RUN:
+			dirty = 0;
 			led_clear();
 			led_load_second( rtc_get_second() );
 			led_load_minute( rtc_get_minute() );
@@ -113,10 +96,16 @@ void op_proc( uns8 key )
 	if( key == BUTTON_T )
 	{
 		if( ++state >= ST_END )
+		{
+			// check is EE data needs to be updated
+			if( dirty )
+			{
+				copyToEE( &param[0], 0x60, sizeof( param ) );
+				dirty = 0;
+			}	
 			state = ST_RUN;
-	}		
-		
-
+		}	
+	}
 }		
 	
 	
@@ -133,16 +122,32 @@ void op_adj_param( uns8 data, uns8 key )
 	if( key == BUTTON_S )
 	{
 		if( value < param[data].max )
-			param[data].value++;
+		{
+			value = daw( ++value );
+			param[data].value = value;
+			dirty = 1;
+		}	
 	}
 	
 	// decrement parameter
 	if( key == BUTTON_X )
 	{
 		if( value > param[data].min )
-			param[data].value--;
+		{
+			value = daw( --value );
+			param[data].value = value;
+			dirty = 1;
+		}	
 	}	
 	op_show_param( data );
 }		
+
+uns8 daw( uns8 data )
+{
+	W = data;
+	W = decadj( W );
+	data = W;
+	return data;
+}	
 	
 #endif // _OP_C

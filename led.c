@@ -197,6 +197,7 @@ void led_show_char( uns8 data )
 void led_show_value( uns8 data )
 {
 	data += (data<<2);	// multiply by 5 (5 bytes per character)
+/*	
 	led_row[4] &= 0b11111000;
 	led_row[4] |= led_value[data++];
 	led_row[3] &= 0b11111000;
@@ -207,6 +208,21 @@ void led_show_value( uns8 data )
 	led_row[1] |= led_value[data++];
 	led_row[0] &= 0b11111000;
 	led_row[0] |= led_value[data++];
+*/	
+	led_row[4] &= 0b11111000;
+	led_row[3] &= 0b11111000;
+	led_row[2] &= 0b11111000;
+	led_row[1] &= 0b11111000;
+	led_row[0] &= 0b11111000;
+
+	led_row[0].0 = data.0;
+	led_row[1].0 = data.1;
+	led_row[2].0 = data.2;
+	led_row[3].0 = data.3;
+	led_row[0].1 = data.4;
+	led_row[1].1 = data.5;
+	led_row[2].1 = data.6;
+	led_row[3].1 = data.7;
 }	
 
 

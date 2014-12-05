@@ -10,5 +10,6 @@ void op_task( void );
 void op_proc( uns8 key );
 void op_show_param( uns8 data );
 void op_adj_param( uns8 data, uns8 key );
+uns8 daw( uns8 data );
 
 #endif // _OP_H
